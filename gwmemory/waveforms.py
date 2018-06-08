@@ -1,5 +1,4 @@
 from __future__ import print_function, division
-import memory
 import harmonics
 import utils
 import qnms
