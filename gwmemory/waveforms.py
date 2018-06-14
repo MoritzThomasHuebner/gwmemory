@@ -306,7 +306,7 @@ class SXSNumericalRelativity(MemoryGenerator):
         if times is not None:
             self.set_time_array(times)
 
-        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times)
+        MemoryGenerator.__init__(self, name=name, h_lm=self.h_lm, times=times)
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
@@ -327,9 +327,9 @@ class SXSNumericalRelativity(MemoryGenerator):
             Times on which waveform is evaluated.
         """
         if inc is None or pol is None:
-            return h_lm, times
+            return self.h_lm, times
         else:
-            return combine_modes(h_lm, inc, pol), times
+            return combine_modes(self.h_lm, inc, pol), times
 
 
 class Approximant(MemoryGenerator):        
