@@ -118,8 +118,9 @@ def load_sxs_waveform(file_name, modes=None, extraction='OutermostExtraction.dir
         Dictionary of requested spherical harmonic modes.
     """
     waveform = deepdish.io.load(file_name)
+    output = dict()
+    mode_array = np.array(())
     if modes is None:
-        output = dict()
         for ell in range(2, 5):
             for mm in range(-ell, ell + 1):
                 mode_array = waveform[extraction]['Y_l{}_m{}.dat'.format(ell, mm)[:, 1:]]

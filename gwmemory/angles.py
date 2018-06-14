@@ -31,8 +31,7 @@ def gamma(lm1, lm2, incs=None, theta=None, phi=None, y_lmlm_factor=None):
 
     Return
     ------
-    gamma: list
-        List of coefficients for output modes, l=range(2, 20), m=m1-m2
+    list: Coefficients for output modes, l=range(2, 20), m=m1-m2
     """
     l1, m1 = int(lm1[0]), int(lm1[1:])
     l2, m2 = int(lm2[0]), int(lm2[1:])
@@ -65,15 +64,16 @@ def gamma(lm1, lm2, incs=None, theta=None, phi=None, y_lmlm_factor=None):
     ells = np.arange(2, 21, 1)
 
     delta_m = m1 - m2
-    gamma = []
+    result = []
     for ell in ells:
         if ell < abs(delta_m):
-            gamma.append(0)
+            result.append(0)
         else:
-            gamma.append(np.trapz(lambda_lm1_lm2 * np.conjugate(harm['{}{}'.format(ell, delta_m)])
-                                  * sin_inc, incs).real * 2 * np.pi)
+            result.append(np.trapz(lambda_lm1_lm2 *
+                                   np.conjugate(harm['{}{}'.format(ell, delta_m)])
+                                   * sin_inc, incs) * 2 * np.pi)
 
-    return gamma
+    return result
 
 
 def lambda_matrix(inc, pol, lm1, lm2, theta=None, phi=None, y_lmlm_factor=None):
@@ -91,10 +91,10 @@ def lambda_matrix(inc, pol, lm1, lm2, theta=None, phi=None, y_lmlm_factor=None):
     inc: float
         observer inclination
     pol: float
-        oberser polarisation
+        observer polarisation
     lm1: str
         first lm value format is e.g., '22'
-    lm1: str
+    lm2: str
         second lm value format is e.g., '22'
     theta: array, optional
         1d array of binary inclination values, over which to integrate
@@ -166,10 +166,10 @@ def lambda_lmlm(inc, pol, lm1, lm2, theta=None, phi=None, y_lmlm_factor=None):
     inc: float
         observer inclination
     pol: float
-        oberser polarisation
+        observer polarisation
     lm1: str
         first lm value format is e.g., '22'
-    lm1: str
+    lm2: str
         second lm value format is e.g., '22'
     theta: array, optional
         1d array of binary inclination values, over which to integrate
@@ -180,20 +180,18 @@ def lambda_lmlm(inc, pol, lm1, lm2, theta=None, phi=None, y_lmlm_factor=None):
 
     Return
     ------
-    lambda_lmlm: float, complex
-        lambda_plus - i lambda_cross
+    float, complex: lambda_lmlm (lambda_plus - i lambda_cross)
+
     """
     lambda_mat = lambda_matrix(inc, pol, lm1, lm2, theta, phi, y_lmlm_factor)
 
     plus, cross = omega_ij_to_omega_pol(lambda_mat, inc, pol)
 
-    lambda_lmlm = (plus - 1j * cross) / 2
-
-    return lambda_lmlm
+    return (plus - 1j * cross) / 2
 
 
 def omega_ij_to_omega_pol(omega_ij, inc, pol):
-    '''
+    """
     Map from strain tensor to plus and cross modes.
 
     We assume that only plus and cross are present.
@@ -207,9 +205,10 @@ def omega_ij_to_omega_pol(omega_ij, inc, pol):
     pol: float
         polarisation of source
 
-    output:
-        hp, hx - (complex) time series
-    '''
+    Returns
+    -------
+    hp, hx - (complex) time series
+    """
     theta, phi, psi = inc, pol, 0.
 
     wx, wy, wz = wave_frame(theta, phi, psi)
@@ -220,19 +219,19 @@ def omega_ij_to_omega_pol(omega_ij, inc, pol):
     return omega_plus, omega_cross
 
 
-def plus_tensor(wx, wy, wz=[0, 0, 1]):
-    '''Calculate the plus polarization tensor for some basis.c.f., eq. 2 of https://arxiv.org/pdf/1710.03794.pdf'''
+def plus_tensor(wx, wy, wz=np.array([0, 0, 1])):
+    """Calculate the plus polarization tensor for some basis.c.f., eq. 2 of https://arxiv.org/pdf/1710.03794.pdf"""
     e_plus = np.outer(wx, wx) - np.outer(wy, wy)
     return e_plus
 
 
-def cross_tensor(wx, wy, wz=[0, 0, 1]):
-    '''Calculate the cross polarization tensor for some basis.c.f., eq. 2 of https://arxiv.org/pdf/1710.03794.pdf'''
+def cross_tensor(wx, wy, wz=np.array([0, 0, 1])):
+    """Calculate the cross polarization tensor for some basis.c.f., eq. 2 of https://arxiv.org/pdf/1710.03794.pdf"""
     e_cross = np.outer(wx, wy) + np.outer(wy, wx)
     return e_cross
 
 
-def wave_frame(theta, phi, psi=0):
+def wave_frame(theta, phi, psi=0.):
     """generate wave-frame basis from three angles, see Nishizawa et al. (2009)"""
     cth, sth = np.cos(theta), np.sin(theta)
     cph, sph = np.cos(phi), np.sin(phi)

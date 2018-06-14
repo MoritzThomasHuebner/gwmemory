@@ -19,7 +19,7 @@ def freq_damping_obs(MM, jj, ell=2, mm=2, nn=0):
     nn = tone ... 0 is the default
     returns:  f_lmn, tau_lmn
     f_lmn is observed frequency in Hz
-    tau_lmn is the daming time in seconds
+    tau_lmn is the damping time in seconds
     """
     MM = utils.m_sol_to_geo(MM)
     omega, tau = freq_damping(MM, jj, ell, mm, nn)
@@ -38,7 +38,7 @@ def freq_damping(MM, jj, ell=2, mm=2, nn=0):
     nn = tone ... 0 is the default
     returns:  omega_lmn, tau_lmn
     omega_lmn is ANGULAR frequency in GEOMETRIC units
-    tau_lmn is the daming time in geometric units
+    tau_lmn is the damping time in geometric units
     """
     data_file = os.path.join(pkg_resources.resource_filename(__name__, 'data'),
                              'fitcoeffsWEB.dat')
@@ -58,7 +58,7 @@ def freq_damping(MM, jj, ell=2, mm=2, nn=0):
     q2 = data[cond, 7][0]
     q3 = data[cond, 8][0]
 
-    # dimensionaless frequency
+    # dimensionless frequency
     F_lmn = f1 + f2 * (1. - jj)**f3
 
     # angular frequency
@@ -91,11 +91,11 @@ def amplitude(m1, m2, ell=2, mm=2):
 
     if mm == 1:
         if ell == 2:
-            return 0.52 * (1 - 4*nu)**(0.71) * A22
+            return 0.52 * (1 - 4*nu) ** 0.71 * A22
     elif ell == 2 & mm == 2:
         return A22
     elif ell == 3 & mm == 3:
-        return 0.44 * (1 - 4*nu)**(0.45) * A22
+        return 0.44 * (1 - 4*nu) ** 0.45 * A22
     elif ell == 4 & mm == 4:
         return (5.4 * (nu - 0.22)**2 + 0.04) * A22
     else:
