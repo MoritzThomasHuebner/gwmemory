@@ -26,7 +26,8 @@ class MemoryGenerator(object):
 
     def time_domain_memory(self, inc=None, pol=None, gamma_lmlm=None):
         """
-        Calculate the spherical harmonic decomposition of thenonlinear memory from a dictionary of spherical mode time series
+        Calculate the spherical harmonic decomposition of the nonlinear memory from a dictionary of spherical mode time
+        series
 
         Parameters
         ----------

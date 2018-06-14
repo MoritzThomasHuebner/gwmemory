@@ -77,10 +77,13 @@ def time_domain_memory(model=None, h_lm=None, times=None, q=None, MTot=None, S1=
         wave = waveforms.MemoryGenerator(name=model, h_lm=h_lm, times=times)
     elif 'NRSur' in model:
         model_kwargs = {key: kwargs[key] for key in inspect.getargspec(waveforms.Surrogate.__init__)[0] if key in kwargs}
-        wave = waveforms.Surrogate(q=q, name=model, MTot=MTot, S1=S1, S2=S2, distance=distance, times=times, **model_kwargs)
+        wave = waveforms.Surrogate(q=q, name=model, MTot=MTot, S1=S1, S2=S2, distance=distance, times=times,
+                                   **model_kwargs)
     elif 'EOBNR' in model or 'Phenom' in model:
-        model_kwargs = {key: kwargs[key] for key in inspect.getargspec(waveforms.Approximant.__init__)[0] if key in kwargs}
-        wave = waveforms.Approximant(q=q, name=model, MTot=MTot, S1=S1, S2=S2, distance=distance, times=times, **model_kwargs)
+        model_kwargs = {key: kwargs[key] for key in inspect.getargspec(waveforms.Approximant.__init__)[0]
+                        if key in kwargs}
+        wave = waveforms.Approximant(q=q, name=model, MTot=MTot, S1=S1, S2=S2, distance=distance, times=times,
+                                     **model_kwargs)
     elif model == 'MWM':
         model_kwargs = {key: kwargs[key] for key in inspect.getargspec(waveforms.MWM.__init__)[0] if key in kwargs}
         wave = waveforms.MWM(q=q, name=model, MTot=MTot, distance=distance, times=times, **model_kwargs)
