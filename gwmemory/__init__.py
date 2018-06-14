@@ -4,6 +4,7 @@ from . import harmonics
 from . import qnms
 from . import utils
 import inspect
+import numpy as np
 
 
 def time_domain_memory(model=None, h_lm=None, times=None, q=None, MTot=None, S1=None, S2=None, distance=None,
@@ -137,6 +138,7 @@ def frequency_domain_memory(model, q, MTot=None, S1=None, S2=None, distance=None
     sampling_frequency = 1 / (times[1] - times[0])
     
     frequency_domain_strain = dict()
+    frequencies = np.array(())
     for key in time_domain_strain:
         frequency_domain_strain[key], frequencies = utils.nfft(time_domain_strain[key], sampling_frequency)
         
