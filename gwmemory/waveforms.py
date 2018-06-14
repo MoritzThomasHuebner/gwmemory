@@ -18,6 +18,7 @@ class MemoryGenerator(object):
         self.h_lm = h_lm
         self.times = times
         self.modes = self.h_lm.keys()
+        self.distance = None
 
     @property
     def delta_t(self):
@@ -41,7 +42,7 @@ class MemoryGenerator(object):
         ------
         h_mem_lm: dict
             Time series of the spherical harmonic decomposed memory waveform.
-        times: array
+        times: array_like
             Time series on which memory is evaluated.
         """
 
@@ -54,11 +55,8 @@ class MemoryGenerator(object):
         dhlm_dt_sq = dict()
         for lm in lms:
             for lmp in lms:
-                try:
-                    index = (lm, lmp)
-                    dhlm_dt_sq[index] = dhlm_dt[lm] * np.conjugate(dhlm_dt[lmp])
-                except:
-                    None
+                index = (lm, lmp)
+                dhlm_dt_sq[index] = dhlm_dt[lm] * np.conjugate(dhlm_dt[lmp])
 
         if gamma_lmlm is None:
             gamma_lmlm = angles.load_gamma()
@@ -92,7 +90,7 @@ class MemoryGenerator(object):
         
         Parameters
         ----------
-        times: array
+        times: array_like
             New time array for waveform to be evaluated on.
         """
         for mode in self.modes:
@@ -145,11 +143,11 @@ class Surrogate(MemoryGenerator):
             Total binary mass in solar units.
         distance: float, optional
             Distance to the binary in Mpc.
-        S1: array
+        S1: array_like
             Spin vector of more massive black hole.
-        S2: array
+        S2: array_like
             Spin vector of less massive black hole.
-        times: array
+        times: array_like
             Time array to evaluate the waveforms on, default is np.linspace(-900, 100, 10001).
         """
         self.name = name
@@ -278,9 +276,9 @@ class SXSNumericalRelativity(MemoryGenerator):
             Extraction method, this specifies the outer object to use in the h5 file.
         MTot: float
             Lab-frame total mass of the binary in solar masses.
-        distace: float
+        distance: float
             Luminosity distance to the binary in Mpc.
-        times: array
+        times: array_like
             Time array to evaluate the waveforms on, default is time array in h5 file.
         """
         self.name = name
@@ -501,13 +499,13 @@ class MWM(MemoryGenerator):
         minimal waveform model memory waveform:
         eqns (5) and (9) from Favata (2009. ApJL 159)
 
-        TODO: Impement spherical harmonic decomposition?
+        TODO: Implement spherical harmonic decomposition?
 
         Parameters
         ----------
         inc: float
             Binary inclination angle
-        psi: float
+        pol: float
             Binary polarisation angle
         times: array, optional
             Time array on which the memory is calculated
