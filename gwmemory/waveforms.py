@@ -13,8 +13,8 @@ from scipy.interpolate import interp1d
 class MemoryGenerator(object):
 
     def __init__(self, name, h_lm, times):
-        
-        self.name = name    
+
+        self.name = name
         self.h_lm = h_lm
         self.times = times
         self.modes = self.h_lm.keys()
@@ -56,8 +56,9 @@ class MemoryGenerator(object):
             for lmp in lms:
                 try:
                     index = (lm, lmp)
-                    dhlm_dt_sq[index] = dhlm_dt[lm]*np.conjugate(dhlm_dt[lmp])
-                except: None
+                    dhlm_dt_sq[index] = dhlm_dt[lm] * np.conjugate(dhlm_dt[lmp])
+                except:
+                    None
 
         if gamma_lmlm is None:
             gamma_lmlm = angles.load_gamma()
@@ -76,7 +77,7 @@ class MemoryGenerator(object):
                     continue
                 dh_mem_dt_lm[(ell, int(delta_m))] = np.sum(
                     [dhlm_dt_sq[((l1, m1), (l2, m2))] * gamma_lmlm[delta_m]['{}{}{}{}'.format(l1, m1, l2, m2)][ii]
-                    for (l1, m1), (l2, m2) in dhlm_dt_sq.keys() if m1-m2==int(delta_m)], axis=0)
+                     for (l1, m1), (l2, m2) in dhlm_dt_sq.keys() if m1 - m2 == int(delta_m)], axis=0)
 
         h_mem_lm = {lm: const * np.cumsum(dh_mem_dt_lm[lm]) * self.delta_t for lm in dh_mem_dt_lm}
 
@@ -84,7 +85,7 @@ class MemoryGenerator(object):
             return h_mem_lm, self.times
         else:
             return combine_modes(h_mem_lm, inc, pol), self.times
-        
+
     def set_time_array(self, times):
         """
         Change the time array on which the waveform is evaluated.
@@ -176,19 +177,18 @@ class Surrogate(MemoryGenerator):
             self.h_to_geo = 1
             self.t_to_geo = 1
         else:
-            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
-            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
+            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
+            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
 
         self.h_lm = None
         self.times = None
-        
+
         if times is not None and max(times) < 10:
             times *= self.t_to_geo
 
         h_lm, times = self.time_domain_oscillatory(modes=modes, times=times)
 
         MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times)
-
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
@@ -294,15 +294,15 @@ class SXSNumericalRelativity(MemoryGenerator):
             self.h_to_geo = 1
             self.t_to_geo = 1
         else:
-            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
-            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
-            
+            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
+            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
+
             for mode in self.h_lm:
                 self.h_lm /= self.h_to_geo
             self.times / self.t_to_geo
             # Rezero time array to the merger time
             self.times -= self.times[np.argmax(abs(self.h_lm[(2, 2)]))]
-            
+
         if times is not None:
             self.set_time_array(times)
 
@@ -332,7 +332,7 @@ class SXSNumericalRelativity(MemoryGenerator):
             return combine_modes(self.h_lm, inc, pol), times
 
 
-class Approximant(MemoryGenerator):        
+class Approximant(MemoryGenerator):
 
     def __init__(self, name, q, MTot=60, S1=None, S2=None, distance=400, times=None):
         """
@@ -348,11 +348,11 @@ class Approximant(MemoryGenerator):
             Total binary mass in solar units.
         distance: float, optional
             Distance to the binary in Mpc.
-        S1: array
+        S1: array_like
             Spin vector of more massive black hole.
-        S2: array
+        S2: array_like
             Spin vector of less massive black hole.
-        times: array
+        times: array_like
             Time array to evaluate the waveforms on, default is time array from lalsimulation.
             FIXME
         """
@@ -378,7 +378,7 @@ class Approximant(MemoryGenerator):
         self.m2_SI = self.m2 * utils.solar_mass
         self.distance_SI = self.distance * utils.Mpc
 
-        if abs(self.S1[0])>0 or abs(self.S1[1])>0 or abs(self.S2[0])>0 or abs(self.S2[1])>0:
+        if abs(self.S1[0]) > 0 or abs(self.S1[1]) > 0 or abs(self.S2[0]) > 0 or abs(self.S2[1]) > 0:
             print('WARNING: Approximant decomposition works only for non-precessing waveforms.')
             print('Setting spins to be aligned')
             self.S1[0], self.S1[1] = 0., 0.
@@ -387,10 +387,10 @@ class Approximant(MemoryGenerator):
         else:
             self.S1 = list(self.S1)
             self.S2 = list(self.S2)
-        self.available_modes = list(set([(2,2),(2,-2)]))
+        self.available_modes = list({(2, 2), (2, -2)})
 
-        self.h_to_geo = self.distance_SI / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**2
-        self.t_to_geo = 1 / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**3
+        self.h_to_geo = self.distance_SI / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 2
+        self.t_to_geo = 1 / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 3
 
         self.h_lm = None
         self.times = None
@@ -446,12 +446,12 @@ class Approximant(MemoryGenerator):
             WFdict = lal.CreateDict()
 
             if delta_t is None:
-                delta_t = 0.1 * (self.m1_SI + self.m2_SI) * utils.GG / utils.cc**3
+                delta_t = 0.1 * (self.m1_SI + self.m2_SI) * utils.GG / utils.cc ** 3
             else:
                 delta_t = delta_t
 
             hplus, hcross = lalsim.SimInspiralChooseTDWaveform(
-                self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2], 
+                self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
                 self.distance_SI, theta, phi, longAscNodes, eccentricity, meanPerAno, delta_t, fmin, fRef,
                 WFdict, approx)
 
@@ -483,13 +483,13 @@ class MWM(MemoryGenerator):
             q = 1 / q
         self.q = q
         self.MTot = MTot
-        self.distance=distance
+        self.distance = distance
         self.m1 = self.MTot / (1 + self.q)
         self.m2 = self.m1 * self.q
 
-        self.h_to_geo = self.distance * utils.Mpc / (self.m1+self.m2) / utils.solar_mass\
-            / utils.GG * utils.cc**2
-        self.t_to_geo = 1 / (self.m1+self.m2) / utils.solar_mass / utils.GG * utils.cc**3
+        self.h_to_geo = self.distance * utils.Mpc / (self.m1 + self.m2) / utils.solar_mass \
+                        / utils.GG * utils.cc ** 2
+        self.t_to_geo = 1 / (self.m1 + self.m2) / utils.solar_mass / utils.GG * utils.cc ** 3
 
         if times is None:
             times = np.linspace(-900, 100, 10001) / self.t_to_geo
@@ -526,10 +526,10 @@ class MWM(MemoryGenerator):
         if times is None:
             times = self.times
 
-        time_geo = utils.time_s_to_geo(times)    # units: metres
+        time_geo = utils.time_s_to_geo(times)  # units: metres
 
-        m1_geo = utils.m_sol_to_geo(self.m1)         # units: metres
-        m2_geo = utils.m_sol_to_geo(self.m2)         # units: metres
+        m1_geo = utils.m_sol_to_geo(self.m1)  # units: metres
+        m2_geo = utils.m_sol_to_geo(self.m2)  # units: metres
 
         dist_geo = utils.dist_Mpc_to_geo(self.distance)  # units: metres
 
@@ -562,19 +562,19 @@ class MWM(MemoryGenerator):
         TT = time_geo - tm
 
         # some quantity defined after equation (7) of Favata
-        trr = 5 * MM * rm**4 / (256 * eta * MM**4)
+        trr = 5 * MM * rm ** 4 / (256 * eta * MM ** 4)
 
         # calculate the A_{ell m n} matching coefficients.  Note that I've solved
         # a matrix equation that solved for the three coefficients fron three equations
-        xi = 2 * np.sqrt(2 * np.pi / 5) * eta * MM * rm**2
-        chi = -2 * 1j * np.sqrt(MM / rm**3)
+        xi = 2 * np.sqrt(2 * np.pi / 5) * eta * MM * rm ** 2
+        chi = -2 * 1j * np.sqrt(MM / rm ** 3)
 
-        A220 = xi * (sigma221 * sigma222 * chi**2 + sigma221 * chi**3 + sigma222 * chi**3 + chi**4)\
-            / ((sigma220 - sigma221) * (sigma220 - sigma222))
-        A221 = xi * (sigma220 * sigma222 * chi**2 + sigma220 * chi**3 + sigma222 * chi**3 + chi**4)\
-            / ((sigma221 - sigma220) * (sigma221 - sigma222))
-        A222 = xi * (sigma220 * sigma221 * chi**2 + sigma220 * chi**3 + sigma221 * chi**3 + chi**4)\
-            / ((sigma221 - sigma222) * (sigma220 - sigma222))
+        A220 = xi * (sigma221 * sigma222 * chi ** 2 + sigma221 * chi ** 3 + sigma222 * chi ** 3 + chi ** 4) \
+               / ((sigma220 - sigma221) * (sigma220 - sigma222))
+        A221 = xi * (sigma220 * sigma222 * chi ** 2 + sigma220 * chi ** 3 + sigma222 * chi ** 3 + chi ** 4) \
+               / ((sigma221 - sigma220) * (sigma221 - sigma222))
+        A222 = xi * (sigma220 * sigma221 * chi ** 2 + sigma220 * chi ** 3 + sigma221 * chi ** 3 + chi ** 4) \
+               / ((sigma221 - sigma222) * (sigma220 - sigma222))
 
         # Calculate the coefficients in the summed term of equation (9) from Favata (2009)
         # this is a double sum, with each variable going from n = 0 to 2; therefore 9 terms
@@ -591,7 +591,7 @@ class MWM(MemoryGenerator):
         coeffSum22 = sigma222 * np.conj(sigma222) * A222 * np.conj(A222) / (sigma222 + np.conj(sigma222))
 
         # radial separation
-        rr = rm * (1 - TT / trr)**(1 / 4)
+        rr = rm * (1 - TT / trr) ** (1 / 4)
 
         # set up strain
         h_MWM = np.zeros(len(TT))
@@ -622,8 +622,8 @@ class MWM(MemoryGenerator):
         sT = np.sin(inc)
         cT = np.cos(inc)
 
-        h_plus_coeff = 0.77 * eta * MM / (384 * np.pi) * sT**2 * (17 + cT**2) / dist_geo
-        h_mem = dict(plus = h_plus_coeff * h_MWM, cross=np.zeros_like(h_MWM))
+        h_plus_coeff = 0.77 * eta * MM / (384 * np.pi) * sT ** 2 * (17 + cT ** 2) / dist_geo
+        h_mem = dict(plus=h_plus_coeff * h_MWM, cross=np.zeros_like(h_MWM))
 
         return h_mem, times
 
@@ -631,5 +631,5 @@ class MWM(MemoryGenerator):
 def combine_modes(h_lm, inc, pol):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
     total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, pol) for l, m in h_lm])
-    h_plus_cross = dict(plus = total.real, cross = -total.imag)
+    h_plus_cross = dict(plus=total.real, cross=-total.imag)
     return h_plus_cross
