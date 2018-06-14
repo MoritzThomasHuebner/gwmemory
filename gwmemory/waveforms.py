@@ -85,7 +85,7 @@ class MemoryGenerator(object):
         else:
             return combine_modes(h_mem_lm, inc, pol), self.times
         
-    def set_time_array(times):
+    def set_time_array(self, times):
         """
         Change the time array on which the waveform is evaluated.
         
@@ -96,7 +96,7 @@ class MemoryGenerator(object):
         """
         for mode in self.modes:
             interpolated_mode = interp1d(self.times, self.h_lm)
-            h_lm[mode] = interpolated_mode[times]
+            self.h_lm[mode] = interpolated_mode[times]
         self.times = times
 
 
