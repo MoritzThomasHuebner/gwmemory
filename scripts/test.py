@@ -76,7 +76,8 @@ dec = -1.2108
 psi = 2.659
 geocent_time = 1126259642.413
 
-time_array = np.linspace(-900, 100, 10000)
+#time_array = np.linspace(-900, 100, 10000)
+time_array = np.linspace(-0.08, 0.02, 10000)
 time_duration = time_array[-1] - time_array[0]
 sampling_frequency = tupak.utils.get_sampling_frequency(time_array)
 frequency_array = tupak.utils.create_frequency_series(sampling_frequency=sampling_frequency,
@@ -110,12 +111,13 @@ for key in ['total_mass', 'mass_ratio', 's11', 's12', 's13', 's21', 's22', 's23'
             'inc', 'pol', 'ra', 'dec', 'geocent_time', 'psi']:
     priors[key] = injection_parameters[key]
 priors['total_mass'] = tupak.prior.Uniform(minimum=50, maximum=70)
+priors['luminosity_distance'] = tupak.prior.Uniform(minimum=1000, maximum=3000)
 
 likelihood = tupak.GravitationalWaveTransient(interferometers=IFOs, waveform_generator=waveform_generator,
                                               time_marginalization=False, phase_marginalization=False,
                                               distance_marginalization=False, prior=priors)
 
-result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=100,
+result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=300,
                            injection_parameters=injection_parameters, outdir=outdir, label=label)
 
 result.plot_corner(lionize=True)
