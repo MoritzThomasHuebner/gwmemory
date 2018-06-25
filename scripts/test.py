@@ -67,7 +67,7 @@ s13 = S1[2]
 s21 = S2[0]
 s22 = S2[1]
 s23 = S2[2]
-LMax = 4
+LMax = 3
 luminosity_distance = 2000.
 inc = np.pi / 2
 pol = 0
@@ -115,7 +115,7 @@ likelihood = tupak.GravitationalWaveTransient(interferometers=IFOs, waveform_gen
                                               time_marginalization=False, phase_marginalization=False,
                                               distance_marginalization=False, prior=priors)
 
-result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=1000,
+result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=100,
                            injection_parameters=injection_parameters, outdir=outdir, label=label)
 
 result.plot_corner(lionize=True)
