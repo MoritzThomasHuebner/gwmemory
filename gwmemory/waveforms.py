@@ -156,10 +156,6 @@ class Surrogate(MemoryGenerator):
         MemoryGenerator.__init__(self, name=name, distance=distance)
         self.sur = NRSur7dq2.NRSurrogate7dq2()
 
-        if q < 1:
-            q = 1 / q
-        if q > 2:
-            print('WARNING: Surrogate waveform not tested for q>2.')
         self.q = q
         self.MTot = MTot
         if S1 is None:
@@ -229,6 +225,40 @@ class Surrogate(MemoryGenerator):
             return h_lm, times
         else:
             return combine_modes(h_lm, inc, pol), times
+
+    @property
+    def q(self):
+        return self.__q
+
+    @q.setter
+    def q(self, q):
+        if q < 1:
+            q = 1 / q
+        if q > 2:
+            print('WARNING: Surrogate waveform not tested for q>2.')
+        self.__q = q
+
+    @property
+    def S1(self):
+        return self.__s1
+
+    @S1.setter
+    def S1(self, S1):
+        if S1 is None:
+            self.__s1 = np.array([0., 0., 0.])
+        else:
+            self.__s1 = np.array(S1)
+
+    @property
+    def S2(self):
+        return self.__s2
+
+    @S2.setter
+    def S2(self, S2):
+        if S2 is None:
+            self.__s2 = np.array([0., 0., 0.])
+        else:
+            self.__s2 = np.array(S2)
 
     @property
     def h_to_geo(self):
