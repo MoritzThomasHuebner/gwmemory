@@ -17,7 +17,6 @@ class MemoryGenerator(object):
         self.name = name
         self.h_lm = h_lm
         self.times = times
-        self.distance = None
 
     @property
     def modes(self):
