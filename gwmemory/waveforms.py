@@ -248,6 +248,11 @@ class Surrogate(MemoryGenerator):
         else:
             return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
 
+    @property
+    def geometric_time(self):
+        return self.times * self.t_to_geo
+
+
 class SXSNumericalRelativity(MemoryGenerator):
     """
     Memory generator for a numerical relativity waveform.
