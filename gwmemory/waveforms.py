@@ -173,7 +173,6 @@ class Surrogate(MemoryGenerator):
             self.S2 = np.array(S2)
         self.distance = distance
         self.LMax = LMax
-        self.modes = modes
         self.h_lm = None
         self.times = None
 
