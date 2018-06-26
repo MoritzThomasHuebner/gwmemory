@@ -158,20 +158,11 @@ class Surrogate(MemoryGenerator):
 
         self.q = q
         self.MTot = MTot
-        if S1 is None:
-            self.S1 = np.array([0., 0., 0.])
-        else:
-            self.S1 = np.array(S1)
-        if S2 is None:
-            self.S2 = np.array([0., 0., 0.])
-        else:
-            self.S2 = np.array(S2)
-        self.distance = distance
+        self.S1 = S1
+        self.S2 = S2
         self.LMax = LMax
-
-        if times is not None and max(times) < 10:
-            times *= self.t_to_geo
-        self.h_lm, self.times = self.time_domain_oscillatory(modes=modes, times=times)
+        self.times = times
+        self.h_lm, self.times = self.time_domain_oscillatory(modes=modes, times=self.geometric_times)
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
@@ -201,7 +192,7 @@ class Surrogate(MemoryGenerator):
         """
         if self.h_lm is None:
             if times is None:
-                times = np.linspace(-900, 100, 10001)
+                times = self.default_geometric_times
             times = times / self.t_to_geo
             h_lm = self.sur(self.q, self.S1, self.S2, MTot=self.MTot, distance=self.distance, t=times, LMax=self.LMax)
 
@@ -225,6 +216,10 @@ class Surrogate(MemoryGenerator):
             return h_lm, times
         else:
             return combine_modes(h_lm, inc, pol), times
+
+    @property
+    def default_geometric_times(self):
+        return np.linspace(-900, 100, 10001)
 
     @property
     def q(self):
@@ -275,8 +270,11 @@ class Surrogate(MemoryGenerator):
             return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
 
     @property
-    def geometric_time(self):
-        return self.times * self.t_to_geo
+    def geometric_times(self):
+        if self.times is not None:
+            return self.times * self.t_to_geo
+        else:
+            return None
 
 
 class SXSNumericalRelativity(MemoryGenerator):
