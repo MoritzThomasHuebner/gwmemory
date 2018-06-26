@@ -226,10 +226,10 @@ class Surrogate(MemoryGenerator):
         self.__times = times
         if max(self.geometric_times) > max(self.default_geometric_times):
             print("Warning: Time array exceeds the maximum allowed by NRSurrogate.\n Geometric time array max {} > "
-                  "NRSurroage max {}".format(max(self.geometric_times), max(self.default_geometric_times)))
+                  "NRSurrogate max {}".format(max(self.geometric_times), max(self.default_geometric_times)))
         if min(self.geometric_times) > min(self.default_geometric_times):
             print("Warning: Time array exceeds the minimum allowed by NRSurrogate.\n Geometric time array min {} > "
-                  "NRSurroage min {}".format(min(self.geometric_times), min(self.default_geometric_times)))
+                  "NRSurrogate min {}".format(min(self.geometric_times), min(self.default_geometric_times)))
 
     @property
     def default_geometric_times(self):
