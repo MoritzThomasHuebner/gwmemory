@@ -12,11 +12,11 @@ from scipy.interpolate import interp1d
 
 class MemoryGenerator(object):
 
-    def __init__(self, name, h_lm, times):
-
+    def __init__(self, name, h_lm, times, distance):
         self.name = name
         self.h_lm = h_lm
         self.times = times
+        self.distance = distance
 
     @property
     def modes(self):
@@ -178,7 +178,7 @@ class Surrogate(MemoryGenerator):
 
         h_lm, times = self.time_domain_oscillatory(modes=modes, times=times)
 
-        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times)
+        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=distance)
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
@@ -292,7 +292,6 @@ class SXSNumericalRelativity(MemoryGenerator):
             Time array to evaluate the waveforms on, default is time array in h5 file.
         """
         self.name = name
-        self.modes = modes
         self.h_lm, self.times = utils.load_sxs_waveform(name, modes=modes, extraction=extraction)
 
         self.MTot = MTot
@@ -314,7 +313,7 @@ class SXSNumericalRelativity(MemoryGenerator):
         if times is not None:
             self.set_time_array(times)
 
-        MemoryGenerator.__init__(self, name=name, h_lm=self.h_lm, times=times)
+        MemoryGenerator.__init__(self, name=name, h_lm=self.h_lm, times=times, distance=self.distance)
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
@@ -405,7 +404,7 @@ class Approximant(MemoryGenerator):
 
         h_lm, times = self.time_domain_oscillatory()
 
-        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times)
+        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=self.distance)
 
     def time_domain_oscillatory(self, delta_t=None, modes=None, inc=None, pol=None):
         """
@@ -485,13 +484,12 @@ class Approximant(MemoryGenerator):
 class MWM(MemoryGenerator):
 
     def __init__(self, q, MTot=60, distance=400, name='MWM', times=None):
-        MemoryGenerator.__init__(self, name=name, h_lm=dict(), times=times)
+        MemoryGenerator.__init__(self, name=name, h_lm=dict(), times=times, distance=distance)
         self.name = name
         if q > 1:
             q = 1 / q
         self.q = q
         self.MTot = MTot
-        self.distance = distance
         self.m1 = self.MTot / (1 + self.q)
         self.m2 = self.m1 * self.q
 
