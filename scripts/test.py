@@ -1,60 +1,8 @@
 from __future__ import division
-import gwmemory
 import numpy as np
-import matplotlib.pyplot as plt
 import tupak
-
-
-def time_domain_nr_sur_waveform_without_memory(times, mass_ratio, total_mass, s11, s12, s13, s21, s22, s23,
-                                               luminosity_distance,
-                                               inc, pol, LMax, **kwargs):
-    memory_generator = gwmemory.waveforms.Surrogate(q=mass_ratio,
-                                                    name='',
-                                                    MTot=total_mass,
-                                                    S1=np.array([s11, s12, s13]),
-                                                    S2=np.array([s21, s22, s23]),
-                                                    LMax=LMax,
-                                                    times=times,
-                                                    distance=luminosity_distance
-                                                    )
-    h_oscillatory, _ = memory_generator.time_domain_oscillatory(times=times, inc=inc, pol=pol)
-    return h_oscillatory
-
-
-def time_domain_nr_sur_waveform_with_memory(times, mass_ratio, total_mass, s11, s12, s13, s21, s22, s23,
-                                            luminosity_distance,
-                                            inc, pol, LMax, **kwargs):
-    memory_generator = gwmemory.waveforms.Surrogate(q=mass_ratio,
-                                                    name='',
-                                                    MTot=total_mass,
-                                                    S1=np.array([s11, s12, s13]),
-                                                    S2=np.array([s21, s22, s23]),
-                                                    LMax=LMax,
-                                                    times=times,
-                                                    distance=luminosity_distance
-                                                    )
-    h_oscillatory, _ = memory_generator.time_domain_oscillatory(times=times, inc=inc, pol=pol)
-    h_memory, _ = memory_generator.time_domain_memory(inc=inc, pol=pol)
-    res = dict()
-    for mode in h_memory:
-        res[mode] = h_memory[mode] + h_oscillatory[mode]
-    return res
-
-
-def time_domain_nr_sur_memory_waveform(times, mass_ratio, total_mass, s11, s12, s13, s21, s22, s23, luminosity_distance,
-                                       inc, pol, LMax, **kwargs):
-    memory_generator = gwmemory.waveforms.Surrogate(q=mass_ratio,
-                                                    name='',
-                                                    MTot=total_mass,
-                                                    S1=np.array([s11, s12, s13]),
-                                                    S2=np.array([s21, s22, s23]),
-                                                    LMax=LMax,
-                                                    times=times,
-                                                    distance=luminosity_distance
-                                                    )
-    h_memory, _ = memory_generator.time_domain_memory(inc=inc, pol=pol)
-    return h_memory
-
+import matplotlib.pyplot as plt
+import waveform_functions
 
 mass_ratio = 2
 name = 'test'
@@ -76,8 +24,9 @@ dec = -1.2108
 psi = 2.659
 geocent_time = 1126259642.413
 
-#time_array = np.linspace(-900, 100, 10000)
-time_array = np.linspace(-0.08, 0.02, 10000)
+# time_array = np.linspace(-900, 100, 10000)
+# time_array = np.linspace(-0.08, 0.02, 1000)
+time_array = np.linspace(-0.5, 0.029, 1000)
 time_duration = time_array[-1] - time_array[0]
 sampling_frequency = tupak.utils.get_sampling_frequency(time_array)
 frequency_array = tupak.utils.create_frequency_series(sampling_frequency=sampling_frequency,
@@ -95,13 +44,16 @@ injection_parameters = dict(total_mass=total_mass, mass_ratio=mass_ratio, s11=s1
 
 waveform_generator = tupak.WaveformGenerator(time_duration=time_duration,
                                              sampling_frequency=sampling_frequency,
-                                             time_domain_source_model=time_domain_nr_sur_waveform_without_memory,
+                                             time_domain_source_model=waveform_functions.
+                                             time_domain_nr_sur_waveform_without_memory,
                                              parameters=injection_parameters,
                                              waveform_arguments=dict(LMax=LMax))
 waveform_generator.time_array = time_array
 waveform_generator.frequency_array = frequency_array
 hf_signal = waveform_generator.frequency_domain_strain()
-
+test_strain_signal = waveform_generator.time_domain_strain()
+plt.plot(time_array, test_strain_signal['plus'])
+plt.show()
 IFOs = [tupak.gw.detector.get_interferometer_with_fake_noise_and_injection(
     name, injection_polarizations=hf_signal, injection_parameters=injection_parameters, time_duration=time_duration,
     sampling_frequency=sampling_frequency, outdir=outdir) for name in ['H1', 'L1']]
