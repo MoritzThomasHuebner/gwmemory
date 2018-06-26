@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 
 class MemoryGenerator(object):
 
-    def __init__(self, name, h_lm, times, distance):
+    def __init__(self, name, h_lm=None, times=None, distance=None):
         self.name = name
         self.h_lm = h_lm
         self.times = times
@@ -153,7 +153,7 @@ class Surrogate(MemoryGenerator):
         times: array_like
             Time array to evaluate the waveforms on, default is np.linspace(-900, 100, 10001).
         """
-        self.name = name
+        MemoryGenerator.__init__(self, name=name, distance=distance)
         self.sur = NRSur7dq2.NRSurrogate7dq2()
 
         if q < 1:
@@ -175,10 +175,7 @@ class Surrogate(MemoryGenerator):
 
         if times is not None and max(times) < 10:
             times *= self.t_to_geo
-
-        h_lm, times = self.time_domain_oscillatory(modes=modes, times=times)
-
-        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=distance)
+        self.h_lm, self.times = self.time_domain_oscillatory(modes=modes, times=times)
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
         """
