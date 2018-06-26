@@ -171,14 +171,6 @@ class Surrogate(MemoryGenerator):
         self.distance = distance
         self.LMax = LMax
         self.modes = modes
-
-        if MTot is None:
-            self.h_to_geo = 1
-            self.t_to_geo = 1
-        else:
-            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
-            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
-
         self.h_lm = None
         self.times = None
 
@@ -242,6 +234,19 @@ class Surrogate(MemoryGenerator):
         else:
             return combine_modes(h_lm, inc, pol), times
 
+    @property
+    def h_to_geo(self):
+        if self.MTot is None:
+            return 1
+        else:
+            return self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
+
+    @property
+    def t_to_geo(self):
+        if self.MTot is None:
+            return None
+        else:
+            return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
 
 class SXSNumericalRelativity(MemoryGenerator):
     """
@@ -293,8 +298,8 @@ class SXSNumericalRelativity(MemoryGenerator):
             self.h_to_geo = 1
             self.t_to_geo = 1
         else:
-            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
-            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
+            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
+            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
 
             for mode in self.h_lm:
                 self.h_lm /= self.h_to_geo
@@ -388,8 +393,8 @@ class Approximant(MemoryGenerator):
             self.S2 = list(self.S2)
         self.available_modes = list({(2, 2), (2, -2)})
 
-        self.h_to_geo = self.distance_SI / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 2
-        self.t_to_geo = 1 / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 3
+        self.h_to_geo = self.distance_SI / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**2
+        self.t_to_geo = 1 / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**3
 
         self.h_lm = None
         self.times = None
@@ -486,9 +491,9 @@ class MWM(MemoryGenerator):
         self.m1 = self.MTot / (1 + self.q)
         self.m2 = self.m1 * self.q
 
-        self.h_to_geo = self.distance * utils.Mpc / (self.m1 + self.m2) / utils.solar_mass \
-                        / utils.GG * utils.cc ** 2
-        self.t_to_geo = 1 / (self.m1 + self.m2) / utils.solar_mass / utils.GG * utils.cc ** 3
+        self.h_to_geo = self.distance * utils.Mpc / (self.m1+self.m2) / utils.solar_mass\
+            / utils.GG * utils.cc**2
+        self.t_to_geo = 1 / (self.m1+self.m2) / utils.solar_mass / utils.GG * utils.cc**3
 
         if times is None:
             times = np.linspace(-900, 100, 10001) / self.t_to_geo
