@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import waveform_functions
 
 mass_ratio = 2
-name = 'test'
+name = 'memester'
 total_mass = 60
 S1 = np.array([0.8, 0, 0])
 S2 = np.array([0, 0.8, 0])
@@ -24,17 +24,18 @@ dec = -1.2108
 psi = 2.659
 geocent_time = 1126259642.413
 
-# time_array = np.linspace(-900, 100, 10000)
-# time_array = np.linspace(-0.08, 0.02, 1000)
-time_array = np.linspace(-0.5, 0.029, 1000)
+start_time = -0.5
+end_time = 0.029
+
+outdir = 'outdir'
+label = 'test_2'
+
+tupak.core.utils.setup_logger(outdir=outdir, label=label)
+time_array = np.linspace(start_time, end_time, 1000)
 time_duration = time_array[-1] - time_array[0]
 sampling_frequency = tupak.utils.get_sampling_frequency(time_array)
 frequency_array = tupak.utils.create_frequency_series(sampling_frequency=sampling_frequency,
                                                       duration=time_duration)
-
-outdir = 'outdir'
-label = 'test'
-tupak.core.utils.setup_logger(outdir=outdir, label=label)
 
 np.random.seed(88170235)
 
@@ -48,7 +49,7 @@ waveform_generator = tupak.WaveformGenerator(time_duration=time_duration,
                                              time_domain_nr_sur_waveform_without_memory,
                                              parameters=injection_parameters,
                                              waveform_arguments=dict(LMax=LMax))
-waveform_generator.time_array = time_array
+waveform_generator.time_array = time_array.copy()
 waveform_generator.frequency_array = frequency_array
 hf_signal = waveform_generator.frequency_domain_strain()
 test_strain_signal = waveform_generator.time_domain_strain()
@@ -56,20 +57,20 @@ plt.plot(time_array, test_strain_signal['plus'])
 plt.show()
 IFOs = [tupak.gw.detector.get_interferometer_with_fake_noise_and_injection(
     name, injection_polarizations=hf_signal, injection_parameters=injection_parameters, time_duration=time_duration,
-    sampling_frequency=sampling_frequency, outdir=outdir) for name in ['H1', 'L1']]
+    sampling_frequency=sampling_frequency, start_time=start_time, outdir=outdir) for name in ['H1', 'L1']]
 
 priors = dict()
 for key in ['total_mass', 'mass_ratio', 's11', 's12', 's13', 's21', 's22', 's23', 'luminosity_distance',
             'inc', 'pol', 'ra', 'dec', 'geocent_time', 'psi']:
     priors[key] = injection_parameters[key]
 priors['total_mass'] = tupak.prior.Uniform(minimum=50, maximum=70)
-priors['luminosity_distance'] = tupak.prior.Uniform(minimum=1000, maximum=3000)
+priors['luminosity_distance'] = tupak.prior.Uniform(minimum=1500, maximum=2500)
 
 likelihood = tupak.GravitationalWaveTransient(interferometers=IFOs, waveform_generator=waveform_generator,
                                               time_marginalization=False, phase_marginalization=False,
                                               distance_marginalization=False, prior=priors)
 
-result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=300,
+result = tupak.run_sampler(likelihood=likelihood, priors=priors, sampler='dynesty', npoints=100,
                            injection_parameters=injection_parameters, outdir=outdir, label=label)
 
 result.plot_corner(lionize=True)
