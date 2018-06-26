@@ -218,6 +218,20 @@ class Surrogate(MemoryGenerator):
             return combine_modes(h_lm, inc, pol), times
 
     @property
+    def times(self):
+        return self.__times
+
+    @times.setter
+    def times(self, times):
+        self.__times = times
+        if max(self.geometric_times) > max(self.default_geometric_times):
+            print("Warning: Time array exceeds the maximum allowed by NRSurrogate.\n Geometric time array max {} > "
+                  "NRSurroage max {}".format(max(self.geometric_times), max(self.default_geometric_times)))
+        if min(self.geometric_times) > min(self.default_geometric_times):
+            print("Warning: Time array exceeds the minimum allowed by NRSurrogate.\n Geometric time array min {} > "
+                  "NRSurroage min {}".format(min(self.geometric_times), min(self.default_geometric_times)))
+
+    @property
     def default_geometric_times(self):
         return np.linspace(-900, 100, 10001)
 
