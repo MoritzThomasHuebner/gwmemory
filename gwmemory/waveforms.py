@@ -193,7 +193,7 @@ class Surrogate(MemoryGenerator):
         if self.h_lm is None:
             if times is None:
                 times = self.default_geometric_times
-            times = times / self.t_to_geo
+            times = times * self.geo_to_t
             h_lm = self.sur(self.q, self.S1, self.S2, MTot=self.MTot, distance=self.distance, t=times, LMax=self.LMax)
 
             available_modes = set(h_lm.keys())
@@ -282,6 +282,10 @@ class Surrogate(MemoryGenerator):
             return None
         else:
             return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
+
+    @property
+    def geo_to_t(self):
+        return 1/self.t_to_geo
 
     @property
     def geometric_times(self):
