@@ -173,8 +173,6 @@ class Surrogate(MemoryGenerator):
             self.S2 = np.array(S2)
         self.distance = distance
         self.LMax = LMax
-        self.h_lm = None
-        self.times = None
 
         if times is not None and max(times) < 10:
             times *= self.t_to_geo
