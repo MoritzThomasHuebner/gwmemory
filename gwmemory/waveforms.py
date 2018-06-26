@@ -175,7 +175,7 @@ class Surrogate(MemoryGenerator):
         Parameters
         ----------
         times: np.array, optional
-            Time array on which to evaluate the waveform.
+            Time array (In geometric units) on which to evaluate the waveform.
         modes: list, optional
             List of modes to try to generate.
         inc: float, optional
