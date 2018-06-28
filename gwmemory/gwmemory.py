@@ -2,6 +2,7 @@ from . import waveforms
 from . import utils
 import inspect
 
+
 def time_domain_memory(model=None, h_lm=None, times=None, q=None, MTot=None, S1=None, S2=None, distance=None,
                        inc=None, pol=None, **kwargs):
     """
