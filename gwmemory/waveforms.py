@@ -224,6 +224,8 @@ class Surrogate(MemoryGenerator):
     @times.setter
     def times(self, times):
         self.__times = times
+        if times is None:
+            return
         if max(self.geometric_times) > max(self.default_geometric_times):
             print("Warning: Time array exceeds the maximum allowed by NRSurrogate.\n Geometric time array max {} > "
                   "NRSurrogate max {}".format(max(self.geometric_times), max(self.default_geometric_times)))
