@@ -276,18 +276,18 @@ class Surrogate(MemoryGenerator):
         if self.MTot is None:
             return 1
         else:
-            return self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
+            return self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
 
     @property
     def t_to_geo(self):
         if self.MTot is None:
             return None
         else:
-            return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
+            return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
 
     @property
     def geo_to_t(self):
-        return 1/self.t_to_geo
+        return 1 / self.t_to_geo
 
     @property
     def geometric_times(self):
@@ -346,8 +346,8 @@ class SXSNumericalRelativity(MemoryGenerator):
             self.h_to_geo = 1
             self.t_to_geo = 1
         else:
-            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc**2
-            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc**3
+            self.h_to_geo = self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
+            self.t_to_geo = 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
 
             for mode in self.h_lm:
                 self.h_lm /= self.h_to_geo
@@ -408,19 +408,14 @@ class Approximant(MemoryGenerator):
             Time array to evaluate the waveforms on, default is time array from lalsimulation.
             FIXME
         """
-        self.name = name
-        self.distance = distance
         self.q = q
         self.MTot = MTot
         self.S1 = S1
         self.S2 = S2
 
-        self.h_lm = None
-        self.times = None
+        h_lm, times = self.time_domain_oscillatory(self.delta_t)
 
-        h_lm, times = self.time_domain_oscillatory()
-
-        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=self.distance)
+        MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=distance)
 
     @property
     def available_modes(self):
@@ -458,11 +453,11 @@ class Approximant(MemoryGenerator):
 
     @property
     def h_to_geo(self):
-        return self.distance_SI / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**2
+        return self.distance_SI / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 2
 
     @property
     def t_to_geo(self):
-        return 1 / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**3
+        return 1 / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 3
 
     @property
     def S1(self):
@@ -498,7 +493,6 @@ class Approximant(MemoryGenerator):
         else:
             self.__S1 = list(self.__S1)
             self.__S2 = list(self.__S2)
-
 
     def time_domain_oscillatory(self, delta_t=None, modes=None, inc=None, pol=None):
         """
@@ -587,9 +581,9 @@ class MWM(MemoryGenerator):
         self.m1 = self.MTot / (1 + self.q)
         self.m2 = self.m1 * self.q
 
-        self.h_to_geo = self.distance * utils.Mpc / (self.m1+self.m2) / utils.solar_mass\
-            / utils.GG * utils.cc**2
-        self.t_to_geo = 1 / (self.m1+self.m2) / utils.solar_mass / utils.GG * utils.cc**3
+        self.h_to_geo = self.distance * utils.Mpc / (self.m1 + self.m2) / utils.solar_mass \
+                        / utils.GG * utils.cc ** 2
+        self.t_to_geo = 1 / (self.m1 + self.m2) / utils.solar_mass / utils.GG * utils.cc ** 3
 
         if times is None:
             times = np.linspace(-900, 100, 10001) / self.t_to_geo
