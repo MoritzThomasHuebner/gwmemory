@@ -409,40 +409,11 @@ class Approximant(MemoryGenerator):
             FIXME
         """
         self.name = name
-        if q > 1:
-            q = 1 / q
-
+        self.distance = distance
         self.q = q
         self.MTot = MTot
-        if S1 is None:
-            self.S1 = np.array([0., 0., 0.])
-        else:
-            self.S1 = np.array(S1)
-        if S2 is None:
-            self.S2 = np.array([0., 0., 0.])
-        else:
-            self.S2 = np.array(S2)
-        self.distance = distance
-
-        self.m1 = self.MTot / (1 + self.q)
-        self.m2 = self.m1 * self.q
-        self.m1_SI = self.m1 * utils.solar_mass
-        self.m2_SI = self.m2 * utils.solar_mass
-        self.distance_SI = self.distance * utils.Mpc
-
-        if abs(self.S1[0]) > 0 or abs(self.S1[1]) > 0 or abs(self.S2[0]) > 0 or abs(self.S2[1]) > 0:
-            print('WARNING: Approximant decomposition works only for non-precessing waveforms.')
-            print('Setting spins to be aligned')
-            self.S1[0], self.S1[1] = 0., 0.
-            self.S2[0], self.S2[1] = 0., 0.
-            print('New spins are: S1 = {}, S2 = {}'.format(self.S1, self.S2))
-        else:
-            self.S1 = list(self.S1)
-            self.S2 = list(self.S2)
-        self.available_modes = list({(2, 2), (2, -2)})
-
-        self.h_to_geo = self.distance_SI / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**2
-        self.t_to_geo = 1 / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**3
+        self.S1 = S1
+        self.S2 = S2
 
         self.h_lm = None
         self.times = None
@@ -450,6 +421,84 @@ class Approximant(MemoryGenerator):
         h_lm, times = self.time_domain_oscillatory()
 
         MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=self.distance)
+
+    @property
+    def available_modes(self):
+        return [(2, 2), (2, -2)]
+
+    @property
+    def m1(self):
+        return self.MTot / (1 + self.q)
+
+    @property
+    def m2(self):
+        return self.m1 * self.q
+
+    @property
+    def m1_SI(self):
+        return self.m1 * utils.solar_mass
+
+    @property
+    def m2_SI(self):
+        return self.m2 * utils.solar_mass
+
+    @property
+    def distance_SI(self):
+        return self.distance * utils.Mpc
+
+    @property
+    def q(self):
+        return self.__q
+
+    @q.setter
+    def q(self, q):
+        if q > 1:
+            q = 1 / q
+        self.__q = q
+
+    @property
+    def h_to_geo(self):
+        return self.distance_SI / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**2
+
+    @property
+    def t_to_geo(self):
+        return 1 / (self.m1_SI+self.m2_SI) / utils.GG * utils.cc**3
+
+    @property
+    def S1(self):
+        return self.__S1
+
+    @S1.setter
+    def S1(self, S1):
+        if S1 is None:
+            self.__S1 = np.array([0., 0., 0.])
+        else:
+            self.__S1 = np.array(S1)
+        self._check_prececssion()
+
+    @property
+    def S2(self):
+        return self.__S2
+
+    @S2.setter
+    def S2(self, S2):
+        if S2 is None:
+            self.__S2 = np.array([0., 0., 0.])
+        else:
+            self.__S2 = np.array(S2)
+        self._check_prececssion()
+
+    def _check_prececssion(self):
+        if abs(self.__S1[0]) > 0 or abs(self.__S1[1]) > 0 or abs(self.__S2[0]) > 0 or abs(self.__S2[1]) > 0:
+            print('WARNING: Approximant decomposition works only for non-precessing waveforms.')
+            print('Setting spins to be aligned')
+            self.__S1[0], self.__S1[1] = 0., 0.
+            self.__S2[0], self.__S2[1] = 0., 0.
+            print('New spins are: S1 = {}, S2 = {}'.format(self.__S1, self.__S2))
+        else:
+            self.__S1 = list(self.__S1)
+            self.__S2 = list(self.__S2)
+
 
     def time_domain_oscillatory(self, delta_t=None, modes=None, inc=None, pol=None):
         """
