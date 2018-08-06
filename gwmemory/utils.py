@@ -5,7 +5,7 @@ import deepdish
 # Constants for conversions
 cc = 299792458.0  # speed of light in m/s
 GG = 6.67384e-11  # Newton in m^3 / (kg s^2)
-solar_mass = 1.98855 * 10**(30)  # solar mass in  kg
+solar_mass = 1.98855 * 10 ** 30  # solar mass in  kg
 kg = 1 / solar_mass
 metre = cc**2 / (GG * solar_mass)
 secs = cc * metre
