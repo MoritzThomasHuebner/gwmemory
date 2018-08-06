@@ -413,7 +413,7 @@ class Approximant(MemoryGenerator):
         self.S1 = S1
         self.S2 = S2
 
-        h_lm, times = self.time_domain_oscillatory(self.delta_t)
+        h_lm, times = self.time_domain_oscillatory()
 
         MemoryGenerator.__init__(self, name=name, h_lm=h_lm, times=times, distance=distance)
 
@@ -460,6 +460,13 @@ class Approximant(MemoryGenerator):
         return 1 / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 3
 
     @property
+    def delta_t(self):
+        if hasattr(self, 'times'):
+            return self.times[1] - self.times[0]
+        else:
+            return 0.1 * (self.m1_SI + self.m2_SI) * utils.GG / utils.cc ** 3
+
+    @property
     def S1(self):
         return self.__S1
 
@@ -483,6 +490,10 @@ class Approximant(MemoryGenerator):
             self.__S2 = np.array(S2)
         self._check_prececssion()
 
+    @property
+    def approximant(self):
+        return lalsim.GetApproximantFromString(self.name)
+
     def _check_prececssion(self):
         if abs(self.__S1[0]) > 0 or abs(self.__S1[1]) > 0 or abs(self.__S2[0]) > 0 or abs(self.__S2[1]) > 0:
             print('WARNING: Approximant decomposition works only for non-precessing waveforms.')
@@ -494,7 +505,7 @@ class Approximant(MemoryGenerator):
             self.__S1 = list(self.__S1)
             self.__S2 = list(self.__S2)
 
-    def time_domain_oscillatory(self, delta_t=None, modes=None, inc=None, pol=None):
+    def time_domain_oscillatory(self, modes=None, inc=None, pol=None):
         """
         Get the mode decomposition of the waveform approximant.
 
@@ -504,8 +515,6 @@ class Approximant(MemoryGenerator):
 
         Parameters
         ----------
-        delta_t: float, optional
-            Time step for waveform.
         modes: list, optional
             List of modes to try to generate.
         inc: float, optional
@@ -531,30 +540,25 @@ class Approximant(MemoryGenerator):
                 modes = list(set(modes).union(self.available_modes))
                 print('Using modes {}'.format(' '.join(modes)))
 
-            fmin, fRef = 20, 20
+            fmin = 20
+            fRef = 20
             theta = 0.0
             phi = 0.0
             longAscNodes = 0.0
             eccentricity = 0.0
             meanPerAno = 0.0
-            approx = lalsim.GetApproximantFromString(self.name)
             WFdict = lal.CreateDict()
-
-            if delta_t is None:
-                delta_t = 0.1 * (self.m1_SI + self.m2_SI) * utils.GG / utils.cc ** 3
-            else:
-                delta_t = delta_t
 
             hplus, hcross = lalsim.SimInspiralChooseTDWaveform(
                 self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
-                self.distance_SI, theta, phi, longAscNodes, eccentricity, meanPerAno, delta_t, fmin, fRef,
-                WFdict, approx)
+                self.distance_SI, theta, phi, longAscNodes, eccentricity, meanPerAno, self.delta_t, fmin, fRef,
+                WFdict, self.approximant)
 
             h = hplus.data.data - 1j * hcross.data.data
 
             h_22 = h / harmonics.sYlm(-2, 2, 2, theta, phi)
 
-            times = np.linspace(0, delta_t * len(h), len(h))
+            times = np.linspace(0, self.delta_t * len(h), len(h))
             times -= times[np.argmax(abs(h_22))]
 
             h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
