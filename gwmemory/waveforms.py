@@ -386,7 +386,7 @@ class SXSNumericalRelativity(MemoryGenerator):
 
 class Approximant(MemoryGenerator):
 
-    def __init__(self, name, q, MTot=60, S1=None, S2=None, distance=400, times=None):
+    def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         """
         Initialise Surrogate MemoryGenerator
         
@@ -410,8 +410,9 @@ class Approximant(MemoryGenerator):
         """
         self.q = q
         self.MTot = MTot
-        self.S1 = S1
-        self.S2 = S2
+        self.__S1 = S1
+        self.__S2 = S2
+        self._check_prececssion()
 
         h_lm, times = self.time_domain_oscillatory()
 
