@@ -416,8 +416,8 @@ class Approximant(MemoryGenerator):
         self.__S2 = S2
         self._check_prececssion()
 
-        MemoryGenerator.__init__(self, name=name, h_lm=dict(), times=times, distance=distance)
-        self.h_lm, self.times = self.time_domain_oscillatory(inc=inc, phase=phase)
+        MemoryGenerator.__init__(self, name=name, times=times, distance=distance)
+        _ = self.time_domain_oscillatory(inc=inc, phase=phase)
 
 
     @property
@@ -464,10 +464,7 @@ class Approximant(MemoryGenerator):
 
     @property
     def delta_t(self):
-        if hasattr(self, 'times'):
-            return self.times[1] - self.times[0]
-        else:
-            return 0.1 * (self.m1_SI + self.m2_SI) * utils.GG / utils.cc ** 3
+        return self.times[1] - self.times[0]
 
     @property
     def S1(self):
@@ -560,19 +557,25 @@ class Approximant(MemoryGenerator):
             h = hplus.data.data - 1j * hcross.data.data
             h_22 = h / harmonics.sYlm(-2, 2, 2, theta, phi)
 
-            times = np.linspace(0, self.delta_t * len(h), len(h))
-            times -= times[np.argmax(abs(h_22))]
-
-            h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
-
-        else:
-            h_lm = self.h_lm
-            times = self.times
+            self.h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
+            self.zero_pad_h_lm()
 
         if inc is None or phase is None:
-            return h_lm, times
+            return self.h_lm
         else:
-            return combine_modes(h_lm=h_lm, inc=inc, phase=phase), times
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+    def zero_pad_h_lm(self):
+        required_zeros = len(self.times)-len(self.h_lm.keys()[0])
+        if required_zeros == 0:
+            return
+        elif required_zeros > 0:
+            for mode in self.h_lm:
+                result = np.zeros(self.times.shape, dtype=np.complex128)
+                result[:self.h_lm[mode].shape[0]] = self.h_lm[mode]
+                self.h_lm[mode] = result
+        else:
+            raise ValueError("The defined time array is too short!")
 
 
 class MWM(MemoryGenerator):
