@@ -85,7 +85,7 @@ def time_domain_memory(model=None, h_lm=None, times=None, q=None, MTot=None, S1=
         return None
 
     function_kwargs = {key: kwargs[key] for key in inspect.getargspec(wave.time_domain_memory)[0] if key in kwargs}
-    h_mem, times = wave.time_domain_memory(inc=inc, pol=pol, **function_kwargs)
+    h_mem, times = wave.time_domain_memory(inc=inc, phase=pol, **function_kwargs)
     
     return h_mem, times
 

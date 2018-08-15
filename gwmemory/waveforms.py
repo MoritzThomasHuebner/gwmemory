@@ -26,7 +26,7 @@ class MemoryGenerator(object):
     def delta_t(self):
         return self.times[1] - self.times[0]
 
-    def time_domain_memory(self, inc=None, pol=None, gamma_lmlm=None):
+    def time_domain_memory(self, inc=None, phase=None, gamma_lmlm=None):
         """
         Calculate the spherical harmonic decomposition of the nonlinear memory from a dictionary of spherical mode time
         series
@@ -35,8 +35,9 @@ class MemoryGenerator(object):
         ----------
         inc: float, optional
             Inclination of the source, if None, the spherical harmonic modes will be returned.
-        pol: float, optional
-            Polarisation of the source, if None, the spherical harmonic modes will be returned.
+        phase: float, optional
+            Reference phase of the source, if None, the spherical harmonic modes will be returned.
+            For CBCs this is the phase at coalesence.
         gamma_lmlm: dict
             Dictionary of arrays defining the angular dependence of the different memory modes, default=None
             if None the function will attempt to load them
@@ -82,10 +83,10 @@ class MemoryGenerator(object):
 
         h_mem_lm = {lm: const * np.cumsum(dh_mem_dt_lm[lm]) * self.delta_t for lm in dh_mem_dt_lm}
 
-        if inc is None or pol is None:
+        if inc is None or phase is None:
             return h_mem_lm, self.times
         else:
-            return combine_modes(h_mem_lm, inc, pol), self.times
+            return combine_modes(h_mem_lm, inc, phase), self.times
 
     def set_time_array(self, times):
         """
@@ -164,7 +165,7 @@ class Surrogate(MemoryGenerator):
         self.times = times
         self.h_lm, self.times = self.time_domain_oscillatory(modes=modes, times=self.geometric_times)
 
-    def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
+    def time_domain_oscillatory(self, times=None, modes=None, inc=None, phase=None):
         """
         Get the mode decomposition of the surrogate waveform.
 
@@ -180,8 +181,8 @@ class Surrogate(MemoryGenerator):
             List of modes to try to generate.
         inc: float, optional
             Inclination of the source, if None, the spherical harmonic modes will be returned.
-        pol: float, optional
-            Polarisation of the source, if None, the spherical harmonic modes will be returned.
+        phase: float, optional
+            Phase at coalescence of the source, if None, the spherical harmonic modes will be returned.
 
         Returns
         -------
@@ -212,10 +213,10 @@ class Surrogate(MemoryGenerator):
             h_lm = self.h_lm
             times = self.times
 
-        if inc is None or pol is None:
+        if inc is None or phase is None:
             return h_lm, times
         else:
-            return combine_modes(h_lm, inc, pol), times
+            return combine_modes(h_lm, inc, phase), times
 
     @property
     def times(self):
@@ -360,7 +361,7 @@ class SXSNumericalRelativity(MemoryGenerator):
 
         MemoryGenerator.__init__(self, name=name, h_lm=self.h_lm, times=times, distance=self.distance)
 
-    def time_domain_oscillatory(self, times=None, modes=None, inc=None, pol=None):
+    def time_domain_oscillatory(self, times=None, modes=None, inc=None, phase=None):
         """
         Get the mode decomposition of the numerical relativity waveform.
 
@@ -368,8 +369,8 @@ class SXSNumericalRelativity(MemoryGenerator):
         ----------
         inc: float, optional
             Inclination of the source, if None, the spherical harmonic modes will be returned.
-        pol: float, optional
-            Polarisation of the source, if None, the spherical harmonic modes will be returned.
+        phase: float, optional
+            Phase at coalescence of the source, if None, the spherical harmonic modes will be returned.
 
         Returns
         -------
@@ -378,16 +379,16 @@ class SXSNumericalRelativity(MemoryGenerator):
         times: np.array
             Times on which waveform is evaluated.
         """
-        if inc is None or pol is None:
+        if inc is None or phase is None:
             return self.h_lm, times
         else:
-            return combine_modes(self.h_lm, inc, pol), times
+            return combine_modes(self.h_lm, inc, phase), times
 
 
 class Approximant(MemoryGenerator):
 
     def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None,
-                 inc=0, pol=0):
+                 inc=0, phase=0):
         """
         Initialise Surrogate MemoryGenerator
         
@@ -416,7 +417,7 @@ class Approximant(MemoryGenerator):
         self._check_prececssion()
 
         MemoryGenerator.__init__(self, name=name, h_lm=dict(), times=times, distance=distance)
-        self.h_lm = self.time_domain_oscillatory(inc=inc, pol=pol)
+        self.h_lm = self.time_domain_oscillatory(inc=inc, phase=phase)
 
 
     @property
@@ -507,7 +508,7 @@ class Approximant(MemoryGenerator):
             self.__S1 = list(self.__S1)
             self.__S2 = list(self.__S2)
 
-    def time_domain_oscillatory(self, modes=None, inc=None, pol=None):
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         """
         Get the mode decomposition of the waveform approximant.
 
@@ -521,8 +522,8 @@ class Approximant(MemoryGenerator):
             List of modes to try to generate.
         inc: float, optional
             Inclination of the source, if None, the spherical harmonic modes will be returned.
-        pol: float, optional
-            Polarisation of the source, if None, the spherical harmonic modes will be returned.
+        phase: float, optional
+            Phase at coalescence of the source, if None, the spherical harmonic modes will be returned.
 
         Returns
         -------
@@ -558,10 +559,10 @@ class Approximant(MemoryGenerator):
         h_22 = h / harmonics.sYlm(-2, 2, 2, theta, phi)
         h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
 
-        if inc is None or pol is None:
+        if inc is None or phase is None:
             return h_lm
         else:
-            return combine_modes(h_lm, inc, pol)
+            return combine_modes(h_lm, inc, phase)
 
 
 class MWM(MemoryGenerator):
@@ -584,7 +585,7 @@ class MWM(MemoryGenerator):
             times = np.linspace(-900, 100, 10001) / self.t_to_geo
         self.times = times
 
-    def time_domain_memory(self, inc, pol, times=None, rm=3):
+    def time_domain_memory(self, inc, phase, times=None, rm=3):
         """
         Calculates the plus and cross polarisations for the
         minimal waveform model memory waveform:
@@ -596,8 +597,8 @@ class MWM(MemoryGenerator):
         ----------
         inc: float
             Binary inclination angle
-        pol: float
-            Binary polarisation angle
+        phase: float
+            Binary phase at coalscence
         times: array, optional
             Time array on which the memory is calculated
         rm: float, optional
@@ -717,8 +718,8 @@ class MWM(MemoryGenerator):
         return h_mem, times
 
 
-def combine_modes(h_lm, inc, pol):
+def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
-    total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, pol) for l, m in h_lm])
+    total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
     h_plus_cross = dict(plus=total.real, cross=-total.imag)
     return h_plus_cross
