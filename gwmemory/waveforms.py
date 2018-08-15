@@ -417,7 +417,7 @@ class Approximant(MemoryGenerator):
         self._check_prececssion()
 
         MemoryGenerator.__init__(self, name=name, times=times, distance=distance)
-        _ = self.time_domain_oscillatory(inc=inc, phase=phase)
+        #_ = self.time_domain_oscillatory(inc=inc, phase=phase)
 
 
     @property
