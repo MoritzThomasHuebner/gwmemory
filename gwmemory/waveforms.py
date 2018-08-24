@@ -49,7 +49,8 @@ class MemoryGenerator(object):
         times: array_like
             Time series on which memory is evaluated.
         """
-
+        if self.h_lm is None:
+            _ = self.time_domain_oscillatory()
         lms = self.modes
 
         dhlm_dt = dict()
@@ -87,6 +88,9 @@ class MemoryGenerator(object):
             return h_mem_lm, self.times
         else:
             return combine_modes(h_mem_lm, inc, phase), self.times
+
+    def time_domain_oscillatory(self, **kwargs):
+        pass
 
     def set_time_array(self, times):
         """
@@ -417,7 +421,6 @@ class Approximant(MemoryGenerator):
         self._check_prececssion()
 
         MemoryGenerator.__init__(self, name=name, times=times, distance=distance)
-        #_ = self.time_domain_oscillatory(inc=inc, phase=phase)
 
 
     @property
