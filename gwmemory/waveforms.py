@@ -249,7 +249,7 @@ class Surrogate(MemoryGenerator):
     @q.setter
     def q(self, q):
         if q < 1:
-            q = 1. / q
+            q = 1 / q
         if q > 2:
             print('WARNING: Surrogate waveform not tested for q>2.')
         self.__q = q
