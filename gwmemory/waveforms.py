@@ -1,12 +1,12 @@
 from __future__ import print_function, division
-from . import harmonics
-from . import utils
-from . import qnms
-from . import angles
+import harmonics
+import utils
+import qnms
+import angles
 import numpy as np
 import lal
 import lalsimulation as lalsim
-# import NRSur7dq2
+import NRSur7dq2
 from scipy.interpolate import interp1d
 
 

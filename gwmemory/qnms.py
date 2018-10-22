@@ -3,8 +3,8 @@
 # black hole modes
 
 import numpy as np
-from gwmemory.harmonics import sYlm
-from gwmemory import utils
+from harmonics import sYlm
+import utils
 import os
 import pkg_resources
 
