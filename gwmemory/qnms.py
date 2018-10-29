@@ -82,7 +82,7 @@ def amplitude(m1, m2, ell=2, mm=2):
     m1, m2 are component masses of the progenitor
     """
 
-    from utils import m12_to_symratio
+    from gwmemory.utils import m12_to_symratio
 
     # symmetric mass ratio
     nu = m12_to_symratio(m1, m2)
