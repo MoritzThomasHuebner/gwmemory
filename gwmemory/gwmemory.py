@@ -1,5 +1,6 @@
-from . import waveforms
-from . import utils
+from __future__ import absolute_import
+
+from gwmemory import waveforms, utils
 import inspect
 
 

@@ -1,8 +1,6 @@
-from __future__ import print_function, division
-import harmonics
-import utils
-import qnms
-import angles
+from __future__ import print_function, division, absolute_import
+
+from gwmemory import angles, qnms, utils, harmonics
 import numpy as np
 import lal
 import lalsimulation as lalsim

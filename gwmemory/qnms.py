@@ -1,10 +1,11 @@
 # Paul Lasky
 # This code package includes code for calculating the properties of quasinormal
 # black hole modes
+from __future__ import print_function, division, absolute_import
 
 import numpy as np
-from harmonics import sYlm
-import utils
+from gwmemory.harmonics import sYlm
+from gwmemory import utils
 import os
 import pkg_resources
 
