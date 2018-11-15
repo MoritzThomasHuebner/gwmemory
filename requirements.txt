@@ -3,6 +3,5 @@ scipy
 pandas
 glob2
 deepdish
-lal
-lalsimulation
+lalsuite
 NRSur7dq2
