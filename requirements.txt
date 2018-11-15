@@ -1,7 +1,7 @@
 numpy
 scipy
 pandas
-glob
+glob2
 deepdish
 lal
 lalsimulation
