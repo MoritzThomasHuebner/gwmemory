@@ -1,7 +1,7 @@
 #!/bin/python
 from __future__ import absolute_import, division, print_function
 import numpy as np
-from gwmemory import harmonics
+from . import harmonics
 import glob2 as glob
 import pkg_resources
 import pandas as pd

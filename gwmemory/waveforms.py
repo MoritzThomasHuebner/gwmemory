@@ -567,7 +567,7 @@ class Approximant(MemoryGenerator):
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
     def zero_pad_h_lm(self):
-        required_zeros = len(self.times) - len(self.h_lm.values()[0])
+        required_zeros = len(self.times) - len(self.h_lm[(2, 2)])
         if required_zeros == 0:
             return
         elif required_zeros > 0:
