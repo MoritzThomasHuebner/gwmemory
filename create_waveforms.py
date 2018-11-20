@@ -3,70 +3,114 @@ import numpy as np
 import matplotlib.pyplot as plt
 import bilby
 
-h_memory_td, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=1.5, MTot=60, S1=np.array([0, 0, 0]),
-                                                          S2=np.array([0, 0, 0]), distance=400)
+q = 2
+m_tot = 60
+s1 = np.array([0, 0, 0])
+s2 = np.array([0, 0, 0])
+distance = 400
+l_max = 4
+inc = np.pi / 2
+phase = 0
 
-h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=1.5, MTot=60,
+_, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=2, MTot=60, S1=np.array([0, 0, 0]),
+                                                S2=np.array([0, 0, 0]), distance=400)
+
+memory_generator = gwmemory.waveforms.Surrogate(q=q,
+                                                name='test',
+                                                MTot=m_tot,
+                                                S1=s1,
+                                                S2=s2,
+                                                LMax=l_max,
+                                                times=times,
+                                                distance=distance
+                                                )
+h_oscillatory_td, _ = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
+h_memory_td, _ = memory_generator.time_domain_memory(inc=inc, phase=phase)
+h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
                                                                      S1=np.array([0, 0, 0]),
                                                                      S2=np.array([0, 0, 0]), distance=400)
 
 total_memory_real_td = np.zeros(len(times))
+total_oscillatory_real_td = np.zeros(len(times))
 total_memory_imag_td = np.zeros(len(times))
-for key in h_memory_td:
-    total_memory_real_td += h_memory_td[key].real
-    total_memory_imag_td += h_memory_td[key].imag
-    plt.xlabel('t')
-    plt.ylabel('h_{memory}')
-    plt.plot(times, h_memory_td[key].real)
-    plt.savefig(fname=str(key) + 'real_td')
-    plt.clf()
-    plt.xlabel('t')
-    plt.ylabel('h_{memory}')
-    plt.plot(times, h_memory_td[key].imag)
-    plt.savefig(fname=str(key) + 'imag_td')
-    plt.clf()
-
-plt.plot(times, total_memory_real_td)
-plt.xlabel('t')
-plt.ylabel('h_{memory}')
-plt.savefig(fname='total_real_td')
-plt.clf()
-
-plt.plot(times, total_memory_imag_td)
-plt.xlabel('t')
-plt.ylabel('h_{memory}')
-plt.savefig(fname='total_imag_td')
-plt.clf()
-
+total_oscillatory_imag_td = np.zeros(len(times))
 total_memory_real_fd = np.zeros(len(frequencies))
 total_memory_imag_fd = np.zeros(len(frequencies))
-for key in h_memory_fd:
-    total_memory_real_fd += h_memory_fd[key].real
-    total_memory_imag_fd += h_memory_fd[key].imag
-    plt.xlabel('f')
-    plt.ylabel('h_{memory}')
-    plt.semilogx()
-    plt.plot(frequencies, h_memory_fd[key].real)
-    plt.savefig(fname=str(key) + 'real_fd')
+
+for mode in h_memory_td:
+    total_memory_real_td += h_memory_td[mode].real
+    total_memory_imag_td += h_memory_td[mode].imag
+    plt.xlabel('t[s]')
+    plt.ylabel('$h_{memory}$')
+    plt.plot(times, h_memory_td[mode].real)
+    plt.savefig(fname=str(mode) + 'real_td')
     plt.clf()
-    plt.xlabel('f')
+    plt.xlabel('t[s]')
+    plt.ylabel('$h_{memory}$')
+    plt.plot(times, h_memory_td[mode].imag)
+    plt.savefig(fname=str(mode) + 'imag_td')
+    plt.clf()
+
+for mode in h_oscillatory_td:
+    plt.xlabel('t[s]')
+    plt.ylabel('$h_{oscillatory}$')
+    plt.plot(times, h_oscillatory_td[mode])
+    plt.savefig(fname='total_h_oscillatory_' + mode + '_td')
+    plt.clf()
+    plt.plot(times, h_memory_td[mode])
+    plt.xlabel('t[s]')
+    plt.ylabel('$h_{memory}$')
+    plt.savefig(fname='total_h_memory_' + mode + '_td')
+    plt.clf()
+    plt.plot(times, h_memory_td[mode] + h_oscillatory_td[mode])
+    plt.xlabel('t[s]')
+    plt.ylabel('$h$')
+    plt.savefig(fname='total_h_' + mode + '_td')
+    plt.clf()
+
+### POSTER PLOT ###
+
+plt.plot(times, h_memory_td['plus'] + h_oscillatory_td['plus'], label='Memory + Oscillatory')
+plt.plot(times, h_memory_td['plus'], label='Memory')
+plt.plot([0.02, 0.02], [0, h_memory_td['plus'][-1]], color='red', linestyle='--', label='Permanent memory distortion')
+plt.legend()
+plt.axhline(y=0, color='black', linestyle=':')
+plt.xlim(-0.04, 0.03)
+plt.xlabel('t[s]')
+plt.ylabel('$h$')
+plt.savefig(fname='total_h_plus_td_poster.pdf')
+plt.clf()
+
+### END POSTER PLOT ###
+
+
+for mode in h_memory_fd:
+    total_memory_real_fd += h_memory_fd[mode].real
+    total_memory_imag_fd += h_memory_fd[mode].imag
+    plt.xlabel('f[Hz]')
+    plt.ylabel('$h_{memory}$')
     plt.semilogx()
-    plt.ylabel('h_{memory}')
-    plt.plot(frequencies, h_memory_fd[key].imag)
-    plt.savefig(fname=str(key) + 'imag_fd')
+    plt.plot(frequencies, h_memory_fd[mode].real)
+    plt.savefig(fname=str(mode) + 'real_fd')
+    plt.clf()
+    plt.xlabel('f[Hz]')
+    plt.semilogx()
+    plt.ylabel('$h_{memory}$')
+    plt.plot(frequencies, h_memory_fd[mode].imag)
+    plt.savefig(fname=str(mode) + 'imag_fd')
     plt.clf()
 
 plt.plot(frequencies, total_memory_real_fd)
 plt.semilogx()
-plt.xlabel('f')
-plt.ylabel('h_{memory}')
+plt.xlabel('f[Hz]')
+plt.ylabel('$h_{memory}$')
 plt.savefig(fname='total_real_fd')
 plt.clf()
 
 plt.plot(frequencies, total_memory_imag_fd)
 plt.semilogx()
 plt.xlabel('f')
-plt.ylabel('h_{memory}')
+plt.ylabel('$h_{memory}$')
 plt.savefig(fname='total_imag_fd')
 plt.clf()
 
@@ -83,7 +127,7 @@ h_memory_response = ifo.get_detector_response(waveform_polarizations=dict(plus=t
 
 plt.plot(frequencies, h_memory_response)
 plt.semilogx()
-plt.xlabel('f')
-plt.ylabel('h_{memory}')
+plt.xlabel('f[Hz]')
+plt.ylabel('$h_{memory}$')
 plt.savefig(fname='det_response_total_real_fd')
 plt.clf()
