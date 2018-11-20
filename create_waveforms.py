@@ -1,7 +1,7 @@
 import gwmemory
 import numpy as np
 import matplotlib.pyplot as plt
-import tupak
+import bilby
 
 h_memory_td, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=1.5, MTot=60, S1=np.array([0, 0, 0]),
                                                           S2=np.array([0, 0, 0]), distance=400)
@@ -70,7 +70,7 @@ plt.ylabel('h_{memory}')
 plt.savefig(fname='total_imag_fd')
 plt.clf()
 
-ifo = tupak.gw.detector.get_empty_interferometer('L1')
+ifo = bilby.gw.detector.get_empty_interferometer('L1')
 ifo.minimum_frequency = 0
 ifo.maximum_frequency = 1000000
 ifo.strain_data.frequency_array = frequencies
