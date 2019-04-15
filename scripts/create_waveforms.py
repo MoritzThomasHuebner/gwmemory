@@ -12,18 +12,18 @@ l_max = 4
 inc = np.pi / 2
 phase = 0
 
-_, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=2, MTot=60, S1=np.array([0, 0, 0]),
-                                                S2=np.array([0, 0, 0]), distance=400)
-
-memory_generator = gwmemory.waveforms.Surrogate(q=q,
-                                                name='test',
-                                                MTot=m_tot,
-                                                S1=s1,
-                                                S2=s2,
-                                                LMax=l_max,
-                                                times=times,
-                                                distance=distance
-                                                )
+# _, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=2, MTot=60, S1=np.array([0, 0, 0]),
+#                                                 S2=np.array([0, 0, 0]), distance=400)
+times = np.linspace(0, 16, 4096)
+memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
+                                                      name='test',
+                                                      MTot=m_tot,
+                                                      S13=0,
+                                                      S23=0,
+                                                      LMax=l_max,
+                                                      times=times,
+                                                      distance=distance
+                                                      )
 h_oscillatory_td, _ = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
 h_memory_td, _ = memory_generator.time_domain_memory(inc=inc, phase=phase)
 h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
