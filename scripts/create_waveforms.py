@@ -2,7 +2,7 @@ import gwmemory
 import numpy as np
 import matplotlib.pyplot as plt
 
-q = 4
+q = 1
 m_tot = 60
 s1 = np.array([0, 0, 0])
 s2 = np.array([0, 0, 0])
@@ -11,8 +11,7 @@ l_max = 4
 inc = np.pi / 2
 phase = 0
 
-times = np.linspace(0, 16, 2048*16)
-print(str(np.ptp(np.diff(times))))
+times = np.linspace(0, 2, 2048*2)
 memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       total_mass=m_tot,
                                                       minimum_frequency=10,
@@ -23,9 +22,7 @@ memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       distance=distance
                                                       )
 h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
-print(str(np.ptp(np.diff(times))))
 h_memory_td, times = memory_generator.time_domain_memory(inc=inc, phase=phase)
-print(str(np.ptp(np.diff(times))))
 
 # h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
 #                                                                      S1=np.array([0, 0, 0]),
