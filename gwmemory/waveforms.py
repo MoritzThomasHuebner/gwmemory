@@ -165,7 +165,7 @@ class HybridSurrogate(MemoryGenerator):
             np.linspace(-900, 100, 10001).
         """
         import gwsurrogate
-        self.sur = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
+        self.sur = gwsurrogate.LoadSurrogate('surrogates/NRHybSur3dq8')
         self.q = q
         self.MTot = total_mass
         self.chi_1 = spin_1
