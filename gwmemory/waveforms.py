@@ -228,9 +228,8 @@ class HybridSurrogate(MemoryGenerator):
         if self.h_lm is None:
             times, h_lm = self.sur(
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
-                dist_mpc=self.distance, dt=1 / self.sampling_frequency,
-                f_low=self.minimum_frequency, mode_list=self.modes,
-                units='mks', times=times)
+                dist_mpc=self.distance, f_low=self.minimum_frequency,
+                mode_list=self.modes, units='mks', times=times)
             print('time_domain_oscillatory:' + str(len(times)))
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
