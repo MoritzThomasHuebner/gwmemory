@@ -23,8 +23,10 @@ memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       )
 h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
 h_memory_td, times = memory_generator.time_domain_memory(inc=inc, phase=phase)
-print(np.max(h_oscillatory_td))
-print(np.max(h_memory_td))
+print(np.max(h_oscillatory_td['plus']))
+print(np.max(h_oscillatory_td['cross']))
+print(np.max(h_memory_td['plus']))
+print(np.max(h_memory_td['cross']))
 # h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
 #                                                                      S1=np.array([0, 0, 0]),
 #                                                                      S2=np.array([0, 0, 0]), distance=400)
