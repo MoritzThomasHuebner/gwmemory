@@ -7,8 +7,8 @@ m_tot = 60
 s1 = np.array([0, 0, 0])
 s2 = np.array([0, 0, 0])
 distance = 400
-l_max = 2
-inc = np.pi / 2
+l_max = 4
+inc = 0.7
 phase = 0
 
 times = np.linspace(0, 16, 2048*16)
