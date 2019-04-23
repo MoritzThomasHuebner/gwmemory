@@ -11,7 +11,7 @@ l_max = 2
 inc = np.pi / 2
 phase = 0
 
-times = np.linspace(0, 16, 2048*2)
+times = np.linspace(0, 16, 2048*16)
 memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       total_mass=m_tot,
                                                       minimum_frequency=10,
