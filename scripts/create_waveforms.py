@@ -30,7 +30,8 @@ memory_generator = gwmemory.waveforms.Approximant(name='IMRPhenomD',
                                                   distance=distance,
                                                   times=times)
 
-h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
+# h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
+h_oscillatory_td, times = memory_generator.time_domain_oscillatory(inc=inc, phase=phase)
 h_memory_td, times = memory_generator.time_domain_memory(inc=inc, phase=phase)
 print(np.max(h_oscillatory_td['plus']))
 print(np.max(h_oscillatory_td['cross']))
