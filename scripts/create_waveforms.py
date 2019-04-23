@@ -12,15 +12,24 @@ inc = np.pi / 2
 phase = 0
 
 times = np.linspace(0, 16, 2048*16)
-memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
-                                                      total_mass=m_tot,
-                                                      minimum_frequency=10,
-                                                      spin_1=s1,
-                                                      spin_2=s2,
-                                                      l_max=l_max,
-                                                      times=times,
-                                                      distance=distance
-                                                      )
+# memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
+#                                                       total_mass=m_tot,
+#                                                       minimum_frequency=10,
+#                                                       spin_1=s1,
+#                                                       spin_2=s2,
+#                                                       l_max=l_max,
+#                                                       times=times,
+#                                                       distance=distance
+#                                                       )
+#
+memory_generator = gwmemory.waveforms.Approximant(name='IMRPhenomD',
+                                                  q=q,
+                                                  MTot=m_tot,
+                                                  S1=s1,
+                                                  S2=s2,
+                                                  distance=distance,
+                                                  times=times)
+
 h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
 h_memory_td, times = memory_generator.time_domain_memory(inc=inc, phase=phase)
 print(np.max(h_oscillatory_td['plus']))
@@ -76,7 +85,7 @@ plt.plot(times, h_memory_td['plus'], label='Memory')
 plt.plot([0.02, 0.02], [0, h_memory_td['plus'][-1]], color='red', linestyle='--', label='Permanent memory distortion')
 plt.legend()
 plt.axhline(y=0, color='black', linestyle=':')
-plt.xlim(-0.06, 0.05)
+plt.xlim(-0.05, 0.04)
 plt.xlabel('t[s]')
 plt.ylabel('$h$')
 plt.savefig(fname='total_h_plus_td_poster.pdf')
