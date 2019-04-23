@@ -7,7 +7,7 @@ m_tot = 60
 s1 = np.array([0, 0, 0])
 s2 = np.array([0, 0, 0])
 distance = 400
-l_max = 4
+l_max = 2
 inc = np.pi / 2
 phase = 0
 
