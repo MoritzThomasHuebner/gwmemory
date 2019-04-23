@@ -12,8 +12,7 @@ inc = np.pi / 2
 phase = 0
 
 times = np.linspace(0, 16, 2048*16)
-print(len(times))
-print('test')
+print(str(np.ptp(np.diff(times))))
 memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       total_mass=m_tot,
                                                       minimum_frequency=10,
@@ -23,14 +22,11 @@ memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       times=times,
                                                       distance=distance
                                                       )
-print(len(memory_generator.times))
-print('test')
 h_oscillatory_td, times = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
-print(len(times))
-print('test')
+print(str(np.ptp(np.diff(times))))
 h_memory_td, times = memory_generator.time_domain_memory(inc=inc, phase=phase)
-print(len(times))
-print('test')
+print(str(np.ptp(np.diff(times))))
+
 # h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
 #                                                                      S1=np.array([0, 0, 0]),
 #                                                                      S2=np.array([0, 0, 0]), distance=400)
