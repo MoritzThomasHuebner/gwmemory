@@ -2,14 +2,14 @@ import gwmemory
 import numpy as np
 import matplotlib.pyplot as plt
 
-q = 1
-m_tot = 60
-s1 = np.array([0, 0, 0])
-s2 = np.array([0, 0, 0])
-distance = 400
+q = 1.
+m_tot = 60.
+s1 = np.array([0., 0., 0.])
+s2 = np.array([0., 0., 0.])
+distance = 400.
 l_max = 4
 inc = np.pi / 2
-phase = 0
+phase = 0.
 
 times = np.linspace(0, 16, 2048*16)
 # memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
