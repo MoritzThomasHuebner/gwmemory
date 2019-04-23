@@ -8,13 +8,13 @@ s1 = np.array([0, 0, 0])
 s2 = np.array([0, 0, 0])
 distance = 400
 l_max = 4
-inc = 0.7
+inc = np.pi / 2
 phase = 0
 
 times = np.linspace(0, 16, 2048*16)
 memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
                                                       total_mass=m_tot,
-                                                      minimum_frequency=10,
+                                                      minimum_frequency=1,
                                                       spin_1=s1,
                                                       spin_2=s2,
                                                       l_max=l_max,
