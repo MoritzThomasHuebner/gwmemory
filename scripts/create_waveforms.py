@@ -1,9 +1,8 @@
 import gwmemory
 import numpy as np
 import matplotlib.pyplot as plt
-import bilby
 
-q = 2
+q = 4
 m_tot = 60
 s1 = np.array([0, 0, 0])
 s2 = np.array([0, 0, 0])
@@ -12,30 +11,28 @@ l_max = 4
 inc = np.pi / 2
 phase = 0
 
-# _, times = gwmemory.gwmemory.time_domain_memory(model='NRSur7dq2', q=2, MTot=60, S1=np.array([0, 0, 0]),
-#                                                 S2=np.array([0, 0, 0]), distance=400)
 times = np.linspace(0, 16, 4096)
 memory_generator = gwmemory.waveforms.HybridSurrogate(q=q,
-                                                      name='test',
-                                                      MTot=m_tot,
-                                                      S13=0,
-                                                      S23=0,
-                                                      LMax=l_max,
+                                                      total_mass=m_tot,
+                                                      minimum_frequency=10,
+                                                      spin_1=s1,
+                                                      spin_2=s2,
+                                                      l_max=l_max,
                                                       times=times,
                                                       distance=distance
                                                       )
 h_oscillatory_td, _ = memory_generator.time_domain_oscillatory(times=times, inc=inc, phase=phase)
 h_memory_td, _ = memory_generator.time_domain_memory(inc=inc, phase=phase)
-h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
-                                                                     S1=np.array([0, 0, 0]),
-                                                                     S2=np.array([0, 0, 0]), distance=400)
+# h_memory_fd, frequencies = gwmemory.gwmemory.frequency_domain_memory(model='NRSur7dq2', q=2, MTot=60,
+#                                                                      S1=np.array([0, 0, 0]),
+#                                                                      S2=np.array([0, 0, 0]), distance=400)
 
 total_memory_real_td = np.zeros(len(times))
 total_oscillatory_real_td = np.zeros(len(times))
 total_memory_imag_td = np.zeros(len(times))
 total_oscillatory_imag_td = np.zeros(len(times))
-total_memory_real_fd = np.zeros(len(frequencies))
-total_memory_imag_fd = np.zeros(len(frequencies))
+# total_memory_real_fd = np.zeros(len(frequencies))
+# total_memory_imag_fd = np.zeros(len(frequencies))
 
 for mode in h_memory_td:
     total_memory_real_td += h_memory_td[mode].real
@@ -84,50 +81,50 @@ plt.clf()
 ### END POSTER PLOT ###
 
 
-for mode in h_memory_fd:
-    total_memory_real_fd += h_memory_fd[mode].real
-    total_memory_imag_fd += h_memory_fd[mode].imag
-    plt.xlabel('f[Hz]')
-    plt.ylabel('$h_{memory}$')
-    plt.semilogx()
-    plt.plot(frequencies, h_memory_fd[mode].real)
-    plt.savefig(fname=str(mode) + 'real_fd')
-    plt.clf()
-    plt.xlabel('f[Hz]')
-    plt.semilogx()
-    plt.ylabel('$h_{memory}$')
-    plt.plot(frequencies, h_memory_fd[mode].imag)
-    plt.savefig(fname=str(mode) + 'imag_fd')
-    plt.clf()
-
-plt.plot(frequencies, total_memory_real_fd)
-plt.semilogx()
-plt.xlabel('f[Hz]')
-plt.ylabel('$h_{memory}$')
-plt.savefig(fname='total_real_fd')
-plt.clf()
-
-plt.plot(frequencies, total_memory_imag_fd)
-plt.semilogx()
-plt.xlabel('f')
-plt.ylabel('$h_{memory}$')
-plt.savefig(fname='total_imag_fd')
-plt.clf()
-
-ifo = bilby.gw.detector.get_empty_interferometer('L1')
-ifo.minimum_frequency = 0
-ifo.maximum_frequency = 1000000
-ifo.strain_data.frequency_array = frequencies
-ifo.strain_data.start_time = times[0]
-h_memory_response = ifo.get_detector_response(waveform_polarizations=dict(plus=total_memory_real_fd),
-                                              parameters=dict(ra=0,
-                                                              dec=0,
-                                                              geocent_time=0,
-                                                              psi=0))
-
-plt.plot(frequencies, h_memory_response)
-plt.semilogx()
-plt.xlabel('f[Hz]')
-plt.ylabel('$h_{memory}$')
-plt.savefig(fname='det_response_total_real_fd')
-plt.clf()
+# for mode in h_memory_fd:
+#     total_memory_real_fd += h_memory_fd[mode].real
+#     total_memory_imag_fd += h_memory_fd[mode].imag
+#     plt.xlabel('f[Hz]')
+#     plt.ylabel('$h_{memory}$')
+#     plt.semilogx()
+#     plt.plot(frequencies, h_memory_fd[mode].real)
+#     plt.savefig(fname=str(mode) + 'real_fd')
+#     plt.clf()
+#     plt.xlabel('f[Hz]')
+#     plt.semilogx()
+#     plt.ylabel('$h_{memory}$')
+#     plt.plot(frequencies, h_memory_fd[mode].imag)
+#     plt.savefig(fname=str(mode) + 'imag_fd')
+#     plt.clf()
+#
+# plt.plot(frequencies, total_memory_real_fd)
+# plt.semilogx()
+# plt.xlabel('f[Hz]')
+# plt.ylabel('$h_{memory}$')
+# plt.savefig(fname='total_real_fd')
+# plt.clf()
+#
+# plt.plot(frequencies, total_memory_imag_fd)
+# plt.semilogx()
+# plt.xlabel('f')
+# plt.ylabel('$h_{memory}$')
+# plt.savefig(fname='total_imag_fd')
+# plt.clf()
+#
+# ifo = bilby.gw.detector.get_empty_interferometer('L1')
+# ifo.minimum_frequency = 0
+# ifo.maximum_frequency = 1000000
+# ifo.strain_data.frequency_array = frequencies
+# ifo.strain_data.start_time = times[0]
+# h_memory_response = ifo.get_detector_response(waveform_polarizations=dict(plus=total_memory_real_fd),
+#                                               parameters=dict(ra=0,
+#                                                               dec=0,
+#                                                               geocent_time=0,
+#                                                               psi=0))
+#
+# plt.plot(frequencies, h_memory_response)
+# plt.semilogx()
+# plt.xlabel('f[Hz]')
+# plt.ylabel('$h_{memory}$')
+# plt.savefig(fname='det_response_total_real_fd')
+# plt.clf()
