@@ -20,7 +20,8 @@ class MemoryGenerator(object):
 
     @property
     def modes(self):
-        self._modes = self.h_lm.keys()
+        if self._modes is None and self.h_lm is not None:
+            self._modes = self.h_lm.keys()
         return self._modes
 
     @modes.setter
