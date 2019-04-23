@@ -187,7 +187,7 @@ class HybridSurrogate(MemoryGenerator):
             self.t_to_geo = 1 / self.MTot / solar_mass / GG * cc ** 3
 
         self.h_lm = None
-        self.times = None
+        self.times = times
 
         if times is not None and max(times) < 10:
             times *= self.t_to_geo
