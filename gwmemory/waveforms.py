@@ -112,6 +112,18 @@ class MemoryGenerator(object):
             self.h_lm[mode] = interpolated_mode[times]
         self.times = times
 
+    def zero_pad_h_lm(self):
+        required_zeros = len(self.times) - len(self.h_lm[(2, 2)])
+        if required_zeros == 0:
+            return
+        elif required_zeros > 0:
+            for mode in self.h_lm:
+                result = np.zeros(self.times.shape, dtype=np.complex128)
+                result[:self.h_lm[mode].shape[0]] = self.h_lm[mode]
+                self.h_lm[mode] = result
+        else:
+            raise ValueError("The defined time array is too short!")
+
 
 class HybridSurrogate(MemoryGenerator):
     """
@@ -140,7 +152,7 @@ class HybridSurrogate(MemoryGenerator):
 
     def __init__(self, q, total_mass=None, spin_1=None,
                  spin_2=None, distance=None, l_max=4, modes=None, times=None,
-                 minimum_frequency=10, sampling_frequency=4096):
+                 minimum_frequency=10, sampling_frequency=2048):
         """
         Initialise Surrogate MemoryGenerator
         Parameters
@@ -225,12 +237,12 @@ class HybridSurrogate(MemoryGenerator):
         times: np.array
             Times on which waveform is evaluated.
         """
-        self.times = times
         if self.h_lm is None:
             times, h_lm = self.sur(
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
-                dist_mpc=self.distance, f_low=self.minimum_frequency,
-                mode_list=self.modes, units='mks', times=times)
+                dist_mpc=self.distance, dt=1 / self.sampling_frequency,
+                f_low=self.minimum_frequency, mode_list=self.modes,
+                units='mks')
             print('time_domain_oscillatory:' + str(len(times)))
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
@@ -249,16 +261,14 @@ class HybridSurrogate(MemoryGenerator):
                 modes = list(set(modes).union(available_modes))
                 print('Using modes {}'.format(' '.join(modes)))
 
-            h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
+            self.h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
 
-        else:
-            h_lm = self.h_lm
-            times = self.times
+        self.zero_pad_h_lm()
 
         if inc is None or phase is None:
-            return h_lm, times
+            return self.h_lm, self.times
         else:
-            return combine_modes(h_lm, inc, phase), times
+            return combine_modes(self.h_lm, inc, phase), self.times
 
     @property
     def q(self):
@@ -297,14 +307,6 @@ class HybridSurrogate(MemoryGenerator):
             self._chi_2 = spin_2[2]
         else:
             self._chi_2 = spin_2
-
-    @property
-    def times(self):
-        return self._times
-
-    @times.setter
-    def times(self, times):
-        self._times = times - times[-1]
 
 
 class BaseSurrogate(MemoryGenerator):
@@ -775,18 +777,6 @@ class Approximant(MemoryGenerator):
             return self.h_lm
         else:
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
-
-    def zero_pad_h_lm(self):
-        required_zeros = len(self.times) - len(self.h_lm[(2, 2)])
-        if required_zeros == 0:
-            return
-        elif required_zeros > 0:
-            for mode in self.h_lm:
-                result = np.zeros(self.times.shape, dtype=np.complex128)
-                result[:self.h_lm[mode].shape[0]] = self.h_lm[mode]
-                self.h_lm[mode] = result
-        else:
-            raise ValueError("The defined time array is too short!")
 
 
 class MWM(MemoryGenerator):
