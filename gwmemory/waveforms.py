@@ -279,6 +279,8 @@ class HybridSurrogate(MemoryGenerator):
     def chi_1(self, spin_1):
         if spin_1 is None:
             self._chi_1 = 0.0
+        elif len(np.atleast_1d(spin_1)) == 3:
+            self._chi_1 = spin_1[2]
         else:
             self._chi_1 = spin_1
 
@@ -290,6 +292,8 @@ class HybridSurrogate(MemoryGenerator):
     def chi_2(self, spin_2):
         if spin_2 is None:
             self._chi_2 = 0.0
+        elif len(np.atleast_1d(spin_2)) == 3:
+            self._chi_2 = spin_2[2]
         else:
             self._chi_2 = spin_2
 
