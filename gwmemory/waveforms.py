@@ -225,6 +225,7 @@ class HybridSurrogate(MemoryGenerator):
         times: np.array
             Times on which waveform is evaluated.
         """
+        self.times = times
         if self.h_lm is None:
             times, h_lm = self.sur(
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
@@ -296,6 +297,14 @@ class HybridSurrogate(MemoryGenerator):
             self._chi_2 = spin_2[2]
         else:
             self._chi_2 = spin_2
+
+    @property
+    def times(self):
+        return self._times
+
+    @times.setter
+    def times(self, times):
+        self._times = times - times[-1]
 
 
 class BaseSurrogate(MemoryGenerator):
