@@ -201,12 +201,12 @@ class HybridSurrogate(MemoryGenerator):
         self.h_lm = None
         self.times = times
 
-        if times is not None and max(times) < 10:
+        if times is not None and max(times) < 100:
             times *= self.t_to_geo
 
         h_lm, times = self.time_domain_oscillatory(modes=self.modes, times=times)
 
-        MemoryGenerator.__init__(self, h_lm=h_lm, times=times, name='HybridSurrogate')
+        MemoryGenerator.__init__(self, h_lm=h_lm, times=times, distance=distance, name='HybridSurrogate')
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None,
                                 phase=None):
@@ -247,7 +247,7 @@ class HybridSurrogate(MemoryGenerator):
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
             for ll, mm in old_keys:
                 if mm > 0:
-                    h_lm[(ll, -mm)] = - 1**ll * np.conj(h_lm[(ll, mm)])
+                    h_lm[(ll, -mm)] = (- 1)**ll * np.conj(h_lm[(ll, mm)])
 
             available_modes = set(h_lm.keys())
 
