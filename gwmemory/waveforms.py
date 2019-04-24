@@ -15,6 +15,7 @@ class MemoryGenerator(object):
         self.name = name
         self.h_lm = h_lm
         self.times = times
+        self.zero_pad_h_lm()
         self.distance = distance
         self._modes = None
 
@@ -152,7 +153,7 @@ class HybridSurrogate(MemoryGenerator):
 
     def __init__(self, q, total_mass=None, spin_1=None,
                  spin_2=None, distance=None, l_max=4, modes=None, times=None,
-                 minimum_frequency=10, sampling_frequency=2048):
+                 minimum_frequency=10, sampling_frequency=2048, units='mks'):
         """
         Initialise Surrogate MemoryGenerator
         Parameters
@@ -189,6 +190,7 @@ class HybridSurrogate(MemoryGenerator):
         self.distance = distance
         self.LMax = l_max
         self.modes = modes
+        self.units = units
 
         if total_mass is None:
             self.h_to_geo = 1
@@ -201,7 +203,7 @@ class HybridSurrogate(MemoryGenerator):
         self.h_lm = None
         self.times = times
 
-        if times is not None and max(times) < 100:
+        if times is not None and self.units == 'dimensionless':
             times *= self.t_to_geo
 
         h_lm, times = self.time_domain_oscillatory(modes=self.modes, times=times)
@@ -238,11 +240,11 @@ class HybridSurrogate(MemoryGenerator):
             Times on which waveform is evaluated.
         """
         if self.h_lm is None:
-            times, h_lm = self.sur(
+            _, h_lm = self.sur(
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
                 dist_mpc=self.distance, dt=1 / self.sampling_frequency,
                 f_low=self.minimum_frequency, mode_list=self.modes,
-                units='mks')
+                units=self.units)
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
             for ll, mm in old_keys:
@@ -260,14 +262,15 @@ class HybridSurrogate(MemoryGenerator):
                 modes = list(set(modes).union(available_modes))
                 print('Using modes {}'.format(' '.join(modes)))
 
-            self.h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
-
-        self.zero_pad_h_lm()
+            h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
+        else:
+            h_lm = self.h_lm
+            times = self.times
 
         if inc is None or phase is None:
-            return self.h_lm, self.times
+            return h_lm, times
         else:
-            return combine_modes(self.h_lm, inc, phase), self.times
+            return combine_modes(h_lm, inc, phase), times
 
     @property
     def q(self):
@@ -600,8 +603,7 @@ class SXSNumericalRelativity(MemoryGenerator):
 
 class Approximant(MemoryGenerator):
 
-    def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None,
-                 inc=0, phase=0):
+    def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         """
         Initialise Surrogate MemoryGenerator
         
@@ -630,7 +632,6 @@ class Approximant(MemoryGenerator):
         self._check_prececssion()
 
         MemoryGenerator.__init__(self, name=name, times=times, distance=distance)
-
 
     @property
     def available_modes(self):
