@@ -18,7 +18,8 @@ class MemoryGenerator(object):
         self.name = name
         self.h_lm = h_lm
         self.times = times
-        self.zero_pad_h_lm()
+        if self.h_lm is not None:
+            self.zero_pad_h_lm()
         self.distance = distance
         self._modes = None
 
