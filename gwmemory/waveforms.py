@@ -157,7 +157,8 @@ class HybridSurrogate(MemoryGenerator):
 
     def __init__(self, q, total_mass=None, spin_1=None,
                  spin_2=None, distance=None, l_max=4, modes=None, times=None,
-                 minimum_frequency=10, sampling_frequency=2048, units='mks'):
+                 minimum_frequency=10, sampling_frequency=2048, reference_frequency=50.,
+                 units='mks'):
         """
         Initialise Surrogate MemoryGenerator
         Parameters
@@ -193,6 +194,7 @@ class HybridSurrogate(MemoryGenerator):
         self.distance = distance
         self.LMax = l_max
         self.modes = modes
+        self.reference_frequency = reference_frequency
         self.units = units
 
         if total_mass is None:
@@ -247,7 +249,7 @@ class HybridSurrogate(MemoryGenerator):
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
                 dist_mpc=self.distance, dt=1 / self.sampling_frequency,
                 f_low=self.minimum_frequency, mode_list=self.modes,
-                units=self.units)
+                units=self.units, f_ref=self.reference_frequency)
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
             for ll, mm in old_keys:
