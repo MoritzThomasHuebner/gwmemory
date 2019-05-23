@@ -937,12 +937,9 @@ class MWM(MemoryGenerator):
 
 def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
-    total = _combine(h_lm, inc, phase)
-    if total.size == 1:
-        return dict(plus=float(total.real), cross=float(-total.imag))
-    return [dict(plus=float(total[i].real), cross=float(-total[i].imag)) for i in range(len(total))]
+    total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+    h_plus_cross = dict(plus=total.real, cross=-total.imag)
+    return h_plus_cross
 
 
-@np.vectorize
-def _combine(h_lm, inc, phase):
-    return np.sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+combine_modes_vectorized = np.vectorize(pyfunc=combine_modes, excluded=['h_lm', 'inc'], otypes=[dict])
