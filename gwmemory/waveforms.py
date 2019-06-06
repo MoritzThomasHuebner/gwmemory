@@ -126,8 +126,10 @@ class MemoryGenerator(object):
                 result = np.zeros(self.times.shape, dtype=np.complex128)
                 result[:self.h_lm[mode].shape[0]] = self.h_lm[mode]
                 self.h_lm[mode] = result
-        else:
-            raise ValueError("The defined time array is too short!")
+        elif required_zeros < 0:
+            for mode in self.h_lm:
+                result = self.h_lm[mode][:self.times.shape]
+                self.h_lm[mode] = result
 
 
 class HybridSurrogate(MemoryGenerator):
