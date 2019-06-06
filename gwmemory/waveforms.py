@@ -128,8 +128,7 @@ class MemoryGenerator(object):
                 self.h_lm[mode] = result
         elif required_zeros < 0:
             for mode in self.h_lm:
-                result = self.h_lm[mode][:self.times.shape]
-                self.h_lm[mode] = result
+                self.h_lm[mode] = self.h_lm[mode][self.times.shape[0]:]
 
 
 class HybridSurrogate(MemoryGenerator):
