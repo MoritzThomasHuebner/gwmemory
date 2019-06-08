@@ -245,12 +245,23 @@ class HybridSurrogate(MemoryGenerator):
         times: np.array
             Times on which waveform is evaluated.
         """
+        MASS_TO_TIME = 4.925491025543576e-06
+        dt = times[1] - times[0]
+        duration = times[-1] - times[0] + dt
+        times -= times[0]
+        epsilon = 100 * MASS_TO_TIME * self.MTot
+        t_NR = np.arange(-duration / 1.3 + epsilon, epsilon, dt)
+
         if self.h_lm is None:
-            _, h_lm = self.sur(
-                x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
-                dist_mpc=self.distance, dt=1 / self.sampling_frequency,
-                f_low=0., mode_list=self.modes,
-                units=self.units, f_ref=self.reference_frequency)
+
+            h_lm = self.sur([self.q, self.chi_1, self.chi_2], times=t_NR, f_low=0, M=self.MTot,
+                            dist_mpc=self.distance, units='mks', f_ref=self.reference_frequency)
+
+            # _, h_lm = self.sur(
+            #     x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
+            #     dist_mpc=self.distance, dt=1 / self.sampling_frequency,
+            #     f_low=20., mode_list=self.modes,
+            #     units=self.units, f_ref=self.reference_frequency)
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
             for ll, mm in old_keys:
@@ -272,6 +283,10 @@ class HybridSurrogate(MemoryGenerator):
         else:
             h_lm = self.h_lm
             times = self.times
+        t_NR -= t_NR[0]
+
+        for mode in h_lm.keys():
+            h_lm[mode] = interp1d(t_NR, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
 
         if inc is None or phase is None:
             return h_lm, times
