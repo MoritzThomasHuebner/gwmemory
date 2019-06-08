@@ -284,9 +284,9 @@ class HybridSurrogate(MemoryGenerator):
             h_lm = self.h_lm
             times = self.times
         t_NR -= t_NR[0]
-
         for mode in h_lm.keys():
-            h_lm[mode] = interp1d(t_NR, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
+            if len(times) != len(h_lm[mode]):
+                h_lm[mode] = interp1d(t_NR, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
 
         if inc is None or phase is None:
             return h_lm, times
