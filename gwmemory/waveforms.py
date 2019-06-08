@@ -249,7 +249,7 @@ class HybridSurrogate(MemoryGenerator):
             _, h_lm = self.sur(
                 x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
                 dist_mpc=self.distance, dt=1 / self.sampling_frequency,
-                f_low=self.minimum_frequency, mode_list=self.modes,
+                f_low=0., mode_list=self.modes,
                 units=self.units, f_ref=self.reference_frequency)
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
