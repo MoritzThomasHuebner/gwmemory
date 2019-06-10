@@ -36,4 +36,4 @@ for ell1 in ells:
 
 out_file = "data/gamma_coefficients_delta_m_{}.dat".format(delta_m)
 print("Saving to {}".format(out_file))
-# coefficients.to_csv(out_file, sep='\t', index=False)
+coefficients.to_csv(out_file, sep='\t', index=False)
