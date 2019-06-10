@@ -32,7 +32,7 @@ for ell1 in ells:
 
             print(lm1+lm2)
 
-            coefficients[lm1+lm2] = gamma(lm1, lm2)
+            coefficients[lm1+lm2] = np.real(gamma(lm1, lm2))
 
 out_file = "data/gamma_coefficients_delta_m_{}.dat".format(delta_m)
 print("Saving to {}".format(out_file))
