@@ -3,7 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 import pandas as pd
 import sys
-import gwmemory
+from gwmemory.angles import gamma
 
 """
 Script to calculate the spherical harmonic decomposition of the output memory.
@@ -32,7 +32,7 @@ for ell1 in ells:
 
             print(lm1+lm2)
 
-            coefficients[lm1+lm2] = gwmemory.angles.gamma(lm1, lm2)
+            coefficients[lm1+lm2] = gamma(lm1, lm2)
 
 out_file = "data/gamma_coefficients_delta_m_{}.dat".format(delta_m)
 print("Saving to {}".format(out_file))
