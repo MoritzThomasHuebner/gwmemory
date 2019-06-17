@@ -19,7 +19,10 @@ class MemoryGenerator(object):
         self.h_lm = h_lm
         self.times = times
         if self.h_lm is not None:
-            self.zero_pad_h_lm()
+            try:
+                self.zero_pad_h_lm()
+            except KeyError:
+                pass
         self.distance = distance
         self._modes = None
 
@@ -774,7 +777,7 @@ class Approximant(MemoryGenerator):
                 modes = list(set(modes).union(self.available_modes))
                 print('Using modes {}'.format(' '.join(modes)))
 
-            fmin = 20
+            fmin = 20.
             fRef = 20
             theta = 0.0
             phi = 0.0
