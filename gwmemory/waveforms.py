@@ -97,7 +97,7 @@ class MemoryGenerator(object):
                      for (l1, m1), (l2, m2) in dhlm_dt_sq.keys() if m1 - m2 == int(delta_m)], axis=0)
 
         h_mem_lm = {lm: const * np.cumsum(dh_mem_dt_lm[lm]) * self.delta_t for lm in dh_mem_dt_lm}
-
+        self.h_mem_lm = h_mem_lm
         if inc is None or phase is None:
             return h_mem_lm, self.times
         else:
@@ -283,6 +283,7 @@ class HybridSurrogate(MemoryGenerator):
                 print('Using modes {}'.format(' '.join(modes)))
 
             h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
+            self.h_lm = h_lm
         else:
             h_lm = self.h_lm
             times = self.times
