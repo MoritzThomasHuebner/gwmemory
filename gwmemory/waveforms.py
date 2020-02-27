@@ -8,6 +8,7 @@ import NRSur7dq2
 from scipy.interpolate import interp1d
 from .utils import cc, GG, Mpc, solar_mass
 import gwsurrogate
+import pycentricity
 
 hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
 
@@ -802,6 +803,180 @@ class Approximant(MemoryGenerator):
             return self.h_lm
         else:
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+
+class Eccentric(MemoryGenerator):
+
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, e=0.0, times=None):
+        """
+        Initialise Surrogate MemoryGenerator
+
+        Parameters
+        ----------
+        name: str
+            File name to load.
+        q: float
+            Binary mass ratio
+        MTot: float, optional
+            Total binary mass in solar units.
+        distance: float, optional
+            Distance to the binary in Mpc.
+        S1: array_like
+            Spin vector of more massive black hole.
+        S2: array_like
+            Spin vector of less massive black hole.
+        times: array_like
+            Time array to evaluate the waveforms on, default is time array from lalsimulation.
+            FIXME
+        """
+        self.q = q
+        self.MTot = MTot
+        self.__S1 = S1
+        self.__S2 = S2
+        self.e = e
+
+        MemoryGenerator.__init__(self, name='ECC', times=times, distance=distance)
+
+    @property
+    def available_modes(self):
+        return [(2, 2), (2, -2)]
+
+    @property
+    def m1(self):
+        return self.MTot / (1 + self.q)
+
+    @property
+    def m2(self):
+        return self.m1 * self.q
+
+    @property
+    def m1_SI(self):
+        return self.m1 * utils.solar_mass
+
+    @property
+    def m2_SI(self):
+        return self.m2 * utils.solar_mass
+
+    @property
+    def distance_SI(self):
+        return self.distance * utils.Mpc
+
+    @property
+    def q(self):
+        return self.__q
+
+    @q.setter
+    def q(self, q):
+        if q > 1:
+            q = 1 / q
+        self.__q = q
+
+    @property
+    def h_to_geo(self):
+        return self.distance_SI / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 2
+
+    @property
+    def t_to_geo(self):
+        return 1 / (self.m1_SI + self.m2_SI) / utils.GG * utils.cc ** 3
+
+    @property
+    def delta_t(self):
+        return self.times[1] - self.times[0]
+
+    @property
+    def S1(self):
+        return self.__S1
+
+    @S1.setter
+    def S1(self, S1):
+        if S1 is None:
+            self.__S1 = np.array([0., 0., 0.])
+        else:
+            self.__S1 = np.array(S1)
+
+    @property
+    def S2(self):
+        return self.__S2
+
+    @S2.setter
+    def S2(self, S2):
+        if S2 is None:
+            self.__S2 = np.array([0., 0., 0.])
+        else:
+            self.__S2 = np.array(S2)
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        """
+        Get the mode decomposition of the waveform approximant.
+
+        Since the waveforms we consider only contain content about the ell=|m|=2 modes.
+        We can therefore evaluate the waveform for a face-on system, where only the (2, 2) mode
+        is non-zero.
+
+        Parameters
+        ----------
+        modes: list, optional
+            List of modes to try to generate.
+        inc: float, optional
+            Inclination of the source, if None, the spherical harmonic modes will be returned.
+        phase: float, optional
+            Phase at coalescence of the source, if None, the spherical harmonic modes will be returned.
+
+        Returns
+        -------
+        h_lm: dict
+            Spin-weighted spherical harmonic decomposed waveform.
+        times: np.array
+            Times on which waveform is evaluated.
+        """
+        if self.h_lm is None:
+            if modes is None:
+                modes = self.available_modes
+            else:
+                modes = modes
+
+            if not set(modes).issubset(self.available_modes):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
+                modes = list(set(modes).union(self.available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            theta = 0.0
+            phi = 0.0
+
+            parameters = dict(
+                mass_1=self.m1,
+                mass_2=self.m2,
+                eccentricity=self.e,
+                luminosity_distance=self.distance,
+                theta_jn=theta,
+                psi=0,
+                phase=phi,
+                geocent_time=0.0,
+                ra=0.7,
+                dec=0.3,
+                chi_1=0.0,
+                chi_2=0.0
+            )
+
+            t, h_plus_cross = pycentricity.waveform.seobnre_bbh_with_spin_and_eccentricity(
+                parameters=parameters,
+                sampling_frequency=2048,
+                minimum_frequency=10,
+                plot=False)
+
+            hplus = np.array(h_plus_cross['plus'])
+            hcross = np.array(h_plus_cross['cross'])
+
+            h = hplus - 1j * hcross
+            h_22 = h / harmonics.sYlm(-2, 2, 2, theta, phi)
+
+            self.h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
+            self.times = t
+
+        if inc is None or phase is None:
+            return self.h_lm, self.times
+        else:
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase), self.times
 
 
 class MWM(MemoryGenerator):
