@@ -10,6 +10,7 @@ from .utils import cc, GG, Mpc, solar_mass
 import gwsurrogate
 
 hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
+nrsur7dq4_surrogate = gwsurrogate.LoadSurrogate('NRSur7dq4')
 
 
 class MemoryGenerator(object):
@@ -260,11 +261,6 @@ class HybridSurrogate(MemoryGenerator):
             h_lm = self.sur([self.q, self.chi_1, self.chi_2], times=t_NR, f_low=0, M=self.MTot,
                             dist_mpc=self.distance, units='mks', f_ref=self.reference_frequency)
 
-            # _, h_lm = self.sur(
-            #     x=[self.q, self.chi_1, self.chi_2], M=self.MTot,
-            #     dist_mpc=self.distance, dt=1 / self.sampling_frequency,
-            #     f_low=20., mode_list=self.modes,
-            #     units=self.units, f_ref=self.reference_frequency)
             del h_lm[(5, 5)]
             old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
             for ll, mm in old_keys:
@@ -407,6 +403,209 @@ class BaseSurrogate(MemoryGenerator):
             return self.times * self.t_to_geo
         else:
             return None
+
+
+class NRSur7dq4(MemoryGenerator):
+
+    """
+    Memory generator for a numerical relativity surrogate.
+    Attributes
+    ----------
+    name: str
+        Name of file to extract waveform from.
+    modes: dict
+        Spherical harmonic modes which we have knowledge of, default is ell<=4.
+    h_lm: dict
+        Spherical harmonic decomposed time-domain strain.
+    times: array
+        Array on which waveform is evaluated.
+    q: float
+        Binary mass ratio
+    MTot: float, optional
+        Total binary mass in solar units.
+    distance: float, optional
+        Distance to the binary in MPC.
+    S1: array
+        Spin vector of more massive black hole.
+    S2: array
+        Spin vector of less massive black hole.
+    """
+
+    def __init__(self, q, total_mass=None, spin_1=None,
+                 spin_1x=None, spin_1y=None, spin_1z=None, spin_2x=None, spin_2y=None, spin_2z=None,
+                 distance=None, l_max=4, modes=None, times=None,
+                 minimum_frequency=10, sampling_frequency=2048, reference_frequency=50.,
+                 units='mks'):
+        """
+        Initialise Surrogate MemoryGenerator
+        Parameters
+        ----------
+        name: str
+            Name of the surrogate, default=NRSur7dq2.
+        l_max: int
+            Maximum ell value for oscillatory time series.
+        modes: dict, optional
+            Modes to load in, default is all ell<=4.
+        q: float
+            Binary mass ratio
+        total_mass: float, optional
+            Total binary mass in solar units.
+        distance: float, optional
+            Distance to the binary in MPC.
+        spin_1: array-like
+            Spin vector of more massive black hole.
+        spin_2: array-like
+            Spin vector of less massive black hole.
+        times: array-like
+            Time array to evaluate the waveforms on, default is
+            np.linspace(-900, 100, 10001).
+        """
+        self.sur = nrsur7dq4_surrogate
+
+        self.q = q
+        self.MTot = total_mass
+        self.spin_1x = spin_1x
+        self.spin_1y = spin_1y
+        self.spin_1z = spin_1z
+        self.spin_2x = spin_2x
+        self.spin_2y = spin_2y
+        self.spin_2z = spin_2z
+        self.minimum_frequency = minimum_frequency
+        self.sampling_frequency = sampling_frequency
+        self.distance = distance
+        self.LMax = l_max
+        self.modes = modes
+        self.reference_frequency = reference_frequency
+        self.units = units
+
+        if total_mass is None:
+            self.h_to_geo = 1
+            self.t_to_geo = 1
+        else:
+            self.h_to_geo = self.distance * Mpc / self.MTot /\
+                solar_mass / GG * cc ** 2
+            self.t_to_geo = 1 / self.MTot / solar_mass / GG * cc ** 3
+
+        self.h_lm = None
+        self.times = times
+
+        if times is not None and self.units == 'dimensionless':
+            times *= self.t_to_geo
+
+        h_lm, times = self.time_domain_oscillatory(modes=self.modes, times=times)
+
+        MemoryGenerator.__init__(self, h_lm=h_lm, times=times, distance=distance, name='HybridSurrogate')
+
+    def time_domain_oscillatory(self, times=None, modes=None, inc=None,
+                                phase=None):
+        """
+        Get the mode decomposition of the surrogate waveform.
+        Calculates a BBH waveform using the surrogate models of Field et al.
+        (2014), Blackman et al. (2017)
+        http://journals.aps.org/prx/references/10.1103/PhysRevX.4.031006,
+        https://arxiv.org/abs/1705.07089
+        See https://data.black-holes.org/surrogates/index.html for more
+        information.
+        Parameters
+        ----------
+        times: np.array, optional
+            Time array on which to evaluate the waveform.
+        modes: list, optional
+            List of modes to try to generate.
+        inc: float, optional
+            Inclination of the source, if None, the spherical harmonic modes
+            will be returned.
+        phase: float, optional
+            Phase at coalescence of the source, if None, the spherical harmonic
+            modes will be returned.
+        Returns
+        -------
+        h_lm: dict
+            Spin-weighted spherical harmonic decomposed waveform.
+        times: np.array
+            Times on which waveform is evaluated.
+        """
+        MASS_TO_TIME = 4.925491025543576e-06
+        dt = times[1] - times[0]
+        duration = times[-1] - times[0] + dt
+        times -= times[0]
+        epsilon = 100 * MASS_TO_TIME * self.MTot
+        t_NR = np.arange(-duration / 1.3 + epsilon, epsilon, dt)
+
+        if self.h_lm is None:
+
+            h_lm = self.sur([self.q, self.chi_1, self.chi_2], times=t_NR, f_low=0, M=self.MTot,
+                            dist_mpc=self.distance, units='mks', f_ref=self.reference_frequency)
+
+            del h_lm[(5, 5)]
+            old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
+            for ll, mm in old_keys:
+                if mm > 0:
+                    h_lm[(ll, -mm)] = (- 1)**ll * np.conj(h_lm[(ll, mm)])
+
+            available_modes = set(h_lm.keys())
+
+            if modes is None:
+                modes = available_modes
+
+            if not set(modes).issubset(available_modes):
+                print('Requested {} unavailable modes'.format(
+                    ' '.join(set(modes).difference(available_modes))))
+                modes = list(set(modes).union(available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
+            self.h_lm = h_lm
+        else:
+            h_lm = self.h_lm
+            times = self.times
+        t_NR -= t_NR[0]
+        for mode in h_lm.keys():
+            if len(times) != len(h_lm[mode]):
+                h_lm[mode] = interp1d(t_NR, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
+
+        if inc is None or phase is None:
+            return h_lm, times
+        else:
+            return combine_modes(h_lm, inc, phase), times
+
+    @property
+    def q(self):
+        return self._q
+
+    @q.setter
+    def q(self, q):
+        if q < 1:
+            q = 1 / q
+        if q > 8:
+            raise ValueError('Surrogate waveform not valid for q>8.')
+        self._q = q
+
+    @property
+    def chi_1(self):
+        return self._chi_1
+
+    @chi_1.setter
+    def chi_1(self, spin_1):
+        if spin_1 is None:
+            self._chi_1 = 0.0
+        elif len(np.atleast_1d(spin_1)) == 3:
+            self._chi_1 = spin_1[2]
+        else:
+            self._chi_1 = spin_1
+
+    @property
+    def chi_2(self):
+        return self._chi_2
+
+    @chi_2.setter
+    def chi_2(self, spin_2):
+        if spin_2 is None:
+            self._chi_2 = 0.0
+        elif len(np.atleast_1d(spin_2)) == 3:
+            self._chi_2 = spin_2[2]
+        else:
+            self._chi_2 = spin_2
 
 
 class Surrogate(BaseSurrogate):
