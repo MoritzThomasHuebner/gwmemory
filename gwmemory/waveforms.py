@@ -14,7 +14,6 @@ except Exception:
     pass
 
 
-
 class MemoryGenerator(object):
 
     def __init__(self, name, h_lm=None, times=None, distance=None):
