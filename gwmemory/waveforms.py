@@ -7,9 +7,12 @@ import lalsimulation as lalsim
 import NRSur7dq2
 from scipy.interpolate import interp1d
 from .utils import cc, GG, Mpc, solar_mass
-import gwsurrogate
+try:
+    import gwsurrogate
+    hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
+except Exception:
+    pass
 
-hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
 
 
 class MemoryGenerator(object):
