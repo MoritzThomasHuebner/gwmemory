@@ -844,6 +844,7 @@ class PhenomXHM(Approximant):
         if (mbandthreshold != None):
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
 
+        # Choice of theta and phi does not matter since we decompose this back into (l, m) modes
         theta = 0.4
         phi = 2.0
         f_min = 10.
@@ -874,6 +875,7 @@ class PhenomXHM(Approximant):
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
 
         return hlm, times
+
 
 class MWM(MemoryGenerator):
 
