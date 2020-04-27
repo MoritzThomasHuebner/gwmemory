@@ -122,8 +122,10 @@ class MemoryGenerator(object):
             self.h_lm[mode] = interpolated_mode[times]
         self.times = times
 
-    def zero_pad_h_lm(self):
-        required_zeros = len(self.times) - len(self.h_lm[(2, 2)])
+    def zero_pad_h_lm(self, mode=None):
+        if mode is None:
+            mode = (2, 2)
+        required_zeros = len(self.times) - len(self.h_lm[mode])
         if required_zeros == 0:
             return
         elif required_zeros > 0:
@@ -805,6 +807,73 @@ class Approximant(MemoryGenerator):
         else:
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
+
+class PhenomXHM(Approximant):
+
+    @property
+    def available_modes(self):
+        return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        if self.h_lm is None:
+            if modes is None:
+                modes = self.available_modes
+
+            if not set(modes).issubset(self.available_modes):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
+                modes = list(set(modes).union(self.available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            self.h_lm = dict()
+            for mode in modes:
+                h_lm, times = self.single_mode_from_choose_td(l=mode[0], m=mode[1], mbandthreshold=0)
+                self.h_lm[mode] = h_lm
+            self.zero_pad_h_lm(mode=modes[0])
+
+        if inc is None or phase is None:
+            return self.h_lm
+        else:
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+    def single_mode_from_choose_td(self, l, m, mbandthreshold):
+        lalparams = lal.CreateDict()
+        ModeArray = lalsim.SimInspiralCreateModeArray()
+        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
+        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
+
+        if (mbandthreshold != None):
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+
+        theta = 0.4
+        phi = 2.0
+        f_min = 10.
+        f_ref = 10
+        longAscNodes = 0.0
+        eccentricity = 0.0
+        meanPerAno = 0.0
+
+        hp, hc = lalsim.SimInspiralChooseTDWaveform(m1=self.m1_SI,
+                                                    m2=self.m2_SI,
+                                                    s1x=self.S1[0], s1y=self.S1[1], s1z=self.S1[2],
+                                                    s2x=self.S2[0], s2y=self.S2[1], s2z=self.S2[2],
+                                                    distance=self.distance_SI,
+                                                    inclination=theta,
+                                                    params=lalparams,
+                                                    phiRef=phi,
+                                                    f_ref=f_ref,
+                                                    deltaT=self.delta_t,
+                                                    f_min=f_min,
+                                                    longAscNodes=longAscNodes,
+                                                    eccentricity=eccentricity,
+                                                    meanPerAno=meanPerAno,
+                                                    approximant=lalsim.IMRPhenomXHM)
+
+        Ylm = lal.SpinWeightedSphericalHarmonic(theta, np.pi / 2., -2, l, m)
+        hlm = (hp.data.data - 1j * hc.data.data) / Ylm
+        shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
+        times = np.arange(len(hp.data.data)) * self.delta_t + shift
+
+        return hlm, times
 
 class MWM(MemoryGenerator):
 
