@@ -11,7 +11,7 @@ try:
     import gwsurrogate
     hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
 except Exception:
-    pass
+    print("Warning: could not import gwsurrogate")
 
 
 class MemoryGenerator(object):
@@ -810,6 +810,10 @@ class Approximant(MemoryGenerator):
 
 class PhenomXHM(Approximant):
 
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
+        name = "IMRPhenomXHM"
+        super().__init__(name, q, MTot, S1, S2, distance, times)
+
     @property
     def available_modes(self):
         return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
@@ -847,8 +851,8 @@ class PhenomXHM(Approximant):
         # Choice of theta and phi does not matter since we decompose this back into (l, m) modes
         theta = 0.4
         phi = 2.0
-        f_min = 10.
-        f_ref = 10
+        f_min = 20.
+        f_ref = 20.
         longAscNodes = 0.0
         eccentricity = 0.0
         meanPerAno = 0.0

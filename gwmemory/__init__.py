@@ -6,4 +6,4 @@ from . import utils
 from . import gwmemory
 from .gwmemory import time_domain_memory, frequency_domain_memory
 
-name = "gwmemoritz"
+name = "gwmemory"
