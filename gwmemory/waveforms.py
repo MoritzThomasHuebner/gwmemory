@@ -42,6 +42,18 @@ class MemoryGenerator(object):
     def delta_t(self):
         return self.times[1] - self.times[0]
 
+    @property
+    def duration(self):
+        return self.times[-1] - self.times[0]
+
+    @property
+    def sampling_frequency(self):
+        return 1/(self.times[1] - self.times[0])
+
+    @property
+    def delta_f(self):
+        return 1/self.duration
+
     def time_domain_memory(self, inc=None, phase=None, gamma_lmlm=None):
         """
         Calculate the spherical harmonic decomposition of the nonlinear memory from a dictionary of spherical mode time
@@ -879,6 +891,59 @@ class PhenomXHM(Approximant):
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
 
         return hlm, times
+
+
+class PhenomXPHM(Approximant):
+
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, reference_frequency=10, times=None):
+        name = "IMRPhenomXPHM"
+        super().__init__(name, q, MTot, S1, S2, distance, times)
+        self.reference_frequency = reference_frequency
+
+    @property
+    def available_modes(self):
+        return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        if self.h_lm is None:
+            if modes is None:
+                modes = self.available_modes
+
+            if not set(modes).issubset(self.available_modes):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
+                modes = list(set(modes).union(self.available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            self.h_lm = dict()
+            h_lm_fd = dict()
+            for mode in modes:
+                h_pos, h_neg, _ = self.single_mode_xphm()
+                h_neg = h_neg[::-1]  # Invert order of negative frequencies
+                h_neg = h_neg[:-1]  # Remove redundant zero frequency
+                h_lm_fd[mode] = np.concatenate([h_pos, h_neg])  # Attach inverted negative frequencies to match np.ifft convention
+                self.h_lm[mode] = np.fft.ifft(h_lm_fd[mode], n=len(self.times)) * self.sampling_frequency
+
+        if inc is None or phase is None:
+            return self.h_lm
+        else:
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+    def single_mode_xphm(self):
+        f_min = 10.
+        f_max = 1024.
+        phiRef = 2.
+        hlmpos, hlmneg = lalsim.SimIMRPhenomXPHMOneMode(
+            self.m1_SI, self.m2_SI,
+            self.S1[0], self.S1[1], self.S1[2],
+            self.S2[0], self.S2[1], self.S2[2],
+            self.distance_SI, phiRef, self.delta_f,
+            f_min, f_max, self.reference_frequency, lal.CreateDict()
+        )
+        freqs = np.arange(len(hlmpos.data.data)) * self.delta_f
+        return hlmpos.data.data, hlmneg.data.data, freqs
+
+    def _check_prececssion(self):
+        pass
 
 
 class MWM(MemoryGenerator):
