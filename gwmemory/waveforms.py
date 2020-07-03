@@ -895,14 +895,18 @@ class PhenomXHM(Approximant):
 
 class PhenomXPHM(Approximant):
 
-    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, reference_frequency=10, times=None):
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]),
+                 distance=400, reference_frequency=10, times=None):
         name = "IMRPhenomXPHM"
         super().__init__(name, q, MTot, S1, S2, distance, times)
         self.reference_frequency = reference_frequency
 
     @property
     def available_modes(self):
-        return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+        all_modes = [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+        missing_modes = [(2, 0), (3, 0), (4, 0), (3, 2), (3, -1), (3, 1), (4, -3), (4, 3), (4, -2), (4, 2), (4, -1), (4, 1)]
+        all_modes.extend(missing_modes)
+        return all_modes
 
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
@@ -917,27 +921,31 @@ class PhenomXPHM(Approximant):
             self.h_lm = dict()
             h_lm_fd = dict()
             for mode in modes:
-                h_pos, h_neg, _ = self.single_mode_xphm()
+                h_pos, h_neg, _ = self.single_mode_xphm(l=mode[0], m=mode[1])
                 h_neg = h_neg[::-1]  # Invert order of negative frequencies
                 h_neg = h_neg[:-1]  # Remove redundant zero frequency
                 h_lm_fd[mode] = np.concatenate([h_pos, h_neg])  # Attach inverted negative frequencies to match np.ifft convention
                 self.h_lm[mode] = np.fft.ifft(h_lm_fd[mode], n=len(self.times)) * self.sampling_frequency
+                self.h_lm[mode] = np.roll(self.h_lm[mode], int(len(self.h_lm[mode])/2))  # Put the merger in the middle of the time segment, otherwise memory won't be computed properly
 
         if inc is None or phase is None:
             return self.h_lm
         else:
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
-    def single_mode_xphm(self):
-        f_min = 10.
+    def single_mode_xphm(self, l, m):
+        f_min = 20.
         f_max = 1024.
         phiRef = 2.
+        lalparams = lal.CreateDict()
+        lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
         hlmpos, hlmneg = lalsim.SimIMRPhenomXPHMOneMode(
+            l, m,
             self.m1_SI, self.m2_SI,
             self.S1[0], self.S1[1], self.S1[2],
             self.S2[0], self.S2[1], self.S2[2],
             self.distance_SI, phiRef, self.delta_f,
-            f_min, f_max, self.reference_frequency, lal.CreateDict()
+            f_min, f_max, self.reference_frequency, lalparams
         )
         freqs = np.arange(len(hlmpos.data.data)) * self.delta_f
         return hlmpos.data.data, hlmneg.data.data, freqs
