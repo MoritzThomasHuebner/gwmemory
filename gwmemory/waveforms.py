@@ -948,7 +948,12 @@ class PhenomXPHM(Approximant):
             f_min, f_max, self.reference_frequency, lalparams
         )
         freqs = np.arange(len(hlmpos.data.data)) * self.delta_f
-        return hlmpos.data.data, hlmneg.data.data, freqs
+        hlm_pos = hlmpos.data.data
+        hlm_neg = hlmneg.data.data
+        del hlmpos
+        del hlmneg
+        del lalparams
+        return hlm_pos, hlm_neg, freqs
 
     def _check_prececssion(self):
         pass
