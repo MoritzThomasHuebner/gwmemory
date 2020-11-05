@@ -897,22 +897,7 @@ class PhenomXHM(Approximant):
         longAscNodes = 0.0
         eccentricity = 0.0
         meanPerAno = 0.0
-        # phiRef = 2
-        # hp, hc = lalsim.SimInspiralChooseTDWaveform(m1=self.m1_SI,
-        #                                             m2=self.m2_SI,
-        #                                             s1x=self.S1[0], s1y=self.S1[1], s1z=self.S1[2],
-        #                                             s2x=self.S2[0], s2y=self.S2[1], s2z=self.S2[2],
-        #                                             distance=self.distance_SI,
-        #                                             inclination=inc,
-        #                                             params=lalparams,
-        #                                             phiRef=phiRef,
-        #                                             f_ref=f_ref,
-        #                                             deltaT=self.delta_t,
-        #                                             f_min=f_min,
-        #                                             longAscNodes=longAscNodes,
-        #                                             eccentricity=eccentricity,
-        #                                             meanPerAno=meanPerAno,
-        #                                             approximant=lalsim.IMRPhenomXHM)
+
         hp, hc = lalsim.SimInspiralChooseTDWaveform(
             self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
             self.distance_SI, inc, phase, longAscNodes, eccentricity, meanPerAno, self.delta_t, f_min, f_ref,
