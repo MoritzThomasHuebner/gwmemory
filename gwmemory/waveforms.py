@@ -876,47 +876,52 @@ class PhenomXHM(Approximant):
         lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
         if (mbandthreshold != None):
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
-        hpc, times = self.get_polarisations(inc=inc, phi=phi, lalparams=lalparams)
+        hpc, times = self.get_polarisations(inc=inc, phase=phi, lalparams=lalparams)
         Ylm = lal.SpinWeightedSphericalHarmonic(inc, phi, -2, l, m)
         hlm = (hpc['plus'] - 1j * hpc['cross']) / Ylm
 
         return hlm, times
 
+    def polarisations(self, mbandthreshold, inc, phase):
+        lalparams = lal.CreateDict()
+        if (mbandthreshold != None):
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        hpc, times = self.get_polarisations(inc=inc, phase=phase + np.pi, lalparams=lalparams)
+        # +np.pi for reasons, otherwise odd m modes flip sign
+        return hpc, times
 
-    def get_polarisations(self, inc, phi, lalparams):
-        # Choice of theta and phi does not matter since we decompose this back into (l, m) modes
+    def get_polarisations(self, inc, phase, lalparams):
         hpc = dict()
         f_min = 20.
         f_ref = 20.
         longAscNodes = 0.0
         eccentricity = 0.0
         meanPerAno = 0.0
-        hp, hc = lalsim.SimInspiralChooseTDWaveform(m1=self.m1_SI,
-                                                    m2=self.m2_SI,
-                                                    s1x=self.S1[0], s1y=self.S1[1], s1z=self.S1[2],
-                                                    s2x=self.S2[0], s2y=self.S2[1], s2z=self.S2[2],
-                                                    distance=self.distance_SI,
-                                                    inclination=inc,
-                                                    params=lalparams,
-                                                    phiRef=phi,
-                                                    f_ref=f_ref,
-                                                    deltaT=self.delta_t,
-                                                    f_min=f_min,
-                                                    longAscNodes=longAscNodes,
-                                                    eccentricity=eccentricity,
-                                                    meanPerAno=meanPerAno,
-                                                    approximant=lalsim.IMRPhenomXHM)
+        # phiRef = 2
+        # hp, hc = lalsim.SimInspiralChooseTDWaveform(m1=self.m1_SI,
+        #                                             m2=self.m2_SI,
+        #                                             s1x=self.S1[0], s1y=self.S1[1], s1z=self.S1[2],
+        #                                             s2x=self.S2[0], s2y=self.S2[1], s2z=self.S2[2],
+        #                                             distance=self.distance_SI,
+        #                                             inclination=inc,
+        #                                             params=lalparams,
+        #                                             phiRef=phiRef,
+        #                                             f_ref=f_ref,
+        #                                             deltaT=self.delta_t,
+        #                                             f_min=f_min,
+        #                                             longAscNodes=longAscNodes,
+        #                                             eccentricity=eccentricity,
+        #                                             meanPerAno=meanPerAno,
+        #                                             approximant=lalsim.IMRPhenomXHM)
+        hp, hc = lalsim.SimInspiralChooseTDWaveform(
+            self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
+            self.distance_SI, inc, phase, longAscNodes, eccentricity, meanPerAno, self.delta_t, f_min, f_ref,
+            lalparams, lalsim.IMRPhenomXHM)
+
         shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
         hpc['plus'] = hp.data.data
         hpc['cross'] = hc.data.data
-        return hpc, times
-
-    def polarisations(self, mbandthreshold, inc, phase):
-        lalparams = lal.CreateDict()
-        if (mbandthreshold != None):
-            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
-        hpc, times = self.get_polarisations(inc=inc, phi=phase, lalparams=lalparams)
         return hpc, times
 
 
