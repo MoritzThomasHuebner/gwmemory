@@ -856,7 +856,7 @@ class PhenomXHM(Approximant):
 
         required_zeros = len(self.times) - len(hpc['plus'])
         if required_zeros == 0:
-            return
+            return hpc
         elif required_zeros > 0:
             for mode in hpc:
                 result = np.zeros(self.times.shape, dtype=np.complex128)
@@ -891,7 +891,6 @@ class PhenomXHM(Approximant):
         return hpc, times
 
     def get_polarisations(self, inc, phase, lalparams):
-        hpc = dict()
         f_min = 20.
         f_ref = 20.
         longAscNodes = 0.0
@@ -905,6 +904,7 @@ class PhenomXHM(Approximant):
 
         shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
+        hpc = dict()
         hpc['plus'] = hp.data.data
         hpc['cross'] = hc.data.data
         return hpc, times
