@@ -851,30 +851,52 @@ class PhenomXHM(Approximant):
         else:
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
+    def time_domain_oscillatory_from_polarisations(self, inc, phase):
+        hpc, times = self.polarisations(mbandthreshold=0, inc=inc, phase=phase)
+
+        required_zeros = len(self.times) - len(hpc['plus'])
+        if required_zeros == 0:
+            return
+        elif required_zeros > 0:
+            for mode in hpc:
+                result = np.zeros(self.times.shape, dtype=np.complex128)
+                result[:hpc[mode].shape[0]] = hpc[mode]
+                hpc[mode] = result
+        elif required_zeros < 0:
+            for mode in hpc:
+                hpc[mode] = hpc[mode][-self.times.shape[0]:]
+        return hpc
+
     def single_mode_from_choose_td(self, l, m, mbandthreshold):
+        inc = 0.4
+        phi = np.pi / 2
         lalparams = lal.CreateDict()
         ModeArray = lalsim.SimInspiralCreateModeArray()
         lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
         lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
-
         if (mbandthreshold != None):
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        hpc, times = self.get_polarisations(inc=inc, phi=phi, lalparams=lalparams)
+        Ylm = lal.SpinWeightedSphericalHarmonic(inc, phi, -2, l, m)
+        hlm = (hpc['plus'] - 1j * hpc['cross']) / Ylm
 
+        return hlm, times
+
+
+    def get_polarisations(self, inc, phi, lalparams):
         # Choice of theta and phi does not matter since we decompose this back into (l, m) modes
-        theta = 0.4
-        phi = 2.0
+        hpc = dict()
         f_min = 20.
         f_ref = 20.
         longAscNodes = 0.0
         eccentricity = 0.0
         meanPerAno = 0.0
-
         hp, hc = lalsim.SimInspiralChooseTDWaveform(m1=self.m1_SI,
                                                     m2=self.m2_SI,
                                                     s1x=self.S1[0], s1y=self.S1[1], s1z=self.S1[2],
                                                     s2x=self.S2[0], s2y=self.S2[1], s2z=self.S2[2],
                                                     distance=self.distance_SI,
-                                                    inclination=theta,
+                                                    inclination=inc,
                                                     params=lalparams,
                                                     phiRef=phi,
                                                     f_ref=f_ref,
@@ -884,13 +906,18 @@ class PhenomXHM(Approximant):
                                                     eccentricity=eccentricity,
                                                     meanPerAno=meanPerAno,
                                                     approximant=lalsim.IMRPhenomXHM)
-
-        Ylm = lal.SpinWeightedSphericalHarmonic(theta, np.pi / 2., -2, l, m)
-        hlm = (hp.data.data - 1j * hc.data.data) / Ylm
         shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
+        hpc['plus'] = hp.data.data
+        hpc['cross'] = hc.data.data
+        return hpc, times
 
-        return hlm, times
+    def polarisations(self, mbandthreshold, inc, phase):
+        lalparams = lal.CreateDict()
+        if (mbandthreshold != None):
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        hpc, times = self.get_polarisations(inc=inc, phi=phase, lalparams=lalparams)
+        return hpc, times
 
 
 class PhenomXPHM(Approximant):
@@ -1114,7 +1141,8 @@ class MWM(MemoryGenerator):
 
 def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
-    total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+    # total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+    total = sum([h_lm[(l, m)] * lal.SpinWeightedSphericalHarmonic(inc, phase, -2, l, m) for l, m in h_lm])
     h_plus_cross = dict(plus=total.real, cross=-total.imag)
     return h_plus_cross
 
