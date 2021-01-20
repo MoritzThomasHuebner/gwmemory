@@ -176,8 +176,7 @@ class HybridSurrogate(MemoryGenerator):
 
     def __init__(self, q, total_mass=None, spin_1=None,
                  spin_2=None, distance=None, l_max=4, modes=None, times=None,
-                 minimum_frequency=10, sampling_frequency=2048, reference_frequency=50.,
-                 units='mks'):
+                 minimum_frequency=10, reference_frequency=50., units='mks'):
         """
         Initialise Surrogate MemoryGenerator
         Parameters
@@ -347,10 +346,11 @@ class HybridSurrogate(MemoryGenerator):
 
 class BaseSurrogate(MemoryGenerator):
 
-    def __init__(self, q, name='', MTot=None, S1=None, S2=None, distance=None, LMax=4, modes=None, times=None):
+    def __init__(self, q, name='', MTot=None, S1=None, S2=None, distance=None, LMax=4, max_q=2, times=None):
 
         MemoryGenerator.__init__(self, name=name, distance=distance)
 
+        self.max_q = max_q
         self.q = q
         self.MTot = MTot
         self.S1 = S1
@@ -366,8 +366,8 @@ class BaseSurrogate(MemoryGenerator):
     def q(self, q):
         if q < 1:
             q = 1 / q
-        if q > 2:
-            print('WARNING: Surrogate waveform not tested for q>2.')
+        if q > self.max_q:
+            print(f'WARNING: Surrogate waveform not tested for q>{self.max_q}.')
         self.__q = q
 
     @property
@@ -469,8 +469,7 @@ class Surrogate(BaseSurrogate):
         times: array_like
             Time array to evaluate the waveforms on, default is np.linspace(-900, 100, 10001).
         """
-        BaseSurrogate.__init__(self, q=q, name=name, MTot=MTot, S1=S1, S2=S2, distance=distance, LMax=LMax,
-                               modes=modes, times=times)
+        BaseSurrogate.__init__(self, q=q, name=name, MTot=MTot, S1=S1, S2=S2, distance=distance, LMax=LMax, times=times)
         self.sur = NRSur7dq2.NRSurrogate7dq2()
         self.h_lm, self.times = self.time_domain_oscillatory(modes=modes, times=self.geometric_times)
 
@@ -548,7 +547,7 @@ class Surrogate(BaseSurrogate):
         return np.linspace(-900, 100, 10001)
 
 
-class NRSur7dq4(MemoryGenerator):
+class NRSur7dq4(BaseSurrogate):
 
     """
     Memory generator for a numerical relativity surrogate.
@@ -572,8 +571,7 @@ class NRSur7dq4(MemoryGenerator):
         Spin vector of less massive black hole.
     """
 
-    def __init__(self, q, total_mass=None, spin_1x=None, spin_1y=None, spin_1z=None,
-                 spin_2x=None, spin_2y=None, spin_2z=None, distance=None, l_max=4, modes=None, times=None,
+    def __init__(self, q, total_mass=None, S1=None, S2=None, distance=None, l_max=4, modes=None, times=None,
                  minimum_frequency=10, reference_frequency=50., units='mks'):
         """
         Initialise Surrogate MemoryGenerator
@@ -601,13 +599,7 @@ class NRSur7dq4(MemoryGenerator):
         """
         self.sur = nrsur7dq4_surrogate
 
-        self.q = q
-        self.MTot = total_mass
-        self.S1 = [spin_1x, spin_1y, spin_1z]
-        self.S2 = [spin_2x, spin_2y, spin_2z]
         self.minimum_frequency = minimum_frequency
-        self.distance = distance
-        self.LMax = l_max
         self.modes = modes
         self.reference_frequency = reference_frequency
         self.units = units
@@ -615,9 +607,9 @@ class NRSur7dq4(MemoryGenerator):
         self.h_lm = None
         self.dt = times[1] - times[0]
 
+        super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
+                         distance=distance, LMax=l_max, max_q=4, times=times)
         h_lm, _ = self.time_domain_oscillatory(modes=self.modes, times=times)
-
-        MemoryGenerator.__init__(self, h_lm=h_lm, times=times, distance=distance, name='NRSur7dq4')
 
     def time_domain_oscillatory(self, times=None, modes=None, inc=None,
                                 phase=None):
@@ -688,69 +680,6 @@ class NRSur7dq4(MemoryGenerator):
             return h_lm, times
         else:
             return combine_modes(h_lm, inc, phase), times
-
-    @property
-    def q(self):
-        return self._q
-
-    @q.setter
-    def q(self, q):
-        if q < 1:
-            q = 1 / q
-        if q > 4:
-            raise ValueError('Surrogate waveform not valid for q>8.')
-        self._q = q
-
-    @property
-    def S1(self):
-        return self.__s1
-
-    @S1.setter
-    def S1(self, S1):
-        if S1 is None:
-            self.__s1 = np.array([0., 0., 0.])
-        else:
-            self.__s1 = np.array(S1)
-
-    @property
-    def S2(self):
-        return self.__s2
-
-    @S2.setter
-    def S2(self, S2):
-        if S2 is None:
-            self.__s2 = np.array([0., 0., 0.])
-        else:
-            self.__s2 = np.array(S2)
-
-    @property
-    def h_to_geo(self):
-        if self.MTot is None:
-            return 1
-        else:
-            return self.distance * utils.Mpc / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 2
-
-    @property
-    def t_to_geo(self):
-        if self.MTot is None:
-            return None
-        else:
-            return 1 / self.MTot / utils.solar_mass / utils.GG * utils.cc ** 3
-
-    @property
-    def geo_to_t(self):
-        return 1 / self.t_to_geo
-
-    @property
-    def geometric_times(self):
-        if self.times is not None:
-            return self.times * self.t_to_geo
-        else:
-            return None
-
-    @property
-    def default_geometric_times(self):
-        return np.linspace(-900, 100, 10001)
 
 
 class SXSNumericalRelativity(MemoryGenerator):
