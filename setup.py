@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-setup(name='gwmemoritz',
+setup(name='gwmemory',
       version='0.1.3',
       packages=['gwmemory'],
       package_dir={'gwmemory': 'gwmemory'},

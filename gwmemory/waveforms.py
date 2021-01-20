@@ -41,6 +41,18 @@ class MemoryGenerator(object):
     def delta_t(self):
         return self.times[1] - self.times[0]
 
+    @property
+    def duration(self):
+        return self.times[-1] - self.times[0]
+
+    @property
+    def sampling_frequency(self):
+        return 1/(self.times[1] - self.times[0])
+
+    @property
+    def delta_f(self):
+        return 1/self.duration
+
     def time_domain_memory(self, inc=None, phase=None, gamma_lmlm=None):
         """
         Calculate the spherical harmonic decomposition of the nonlinear memory from a dictionary of spherical mode time
@@ -121,8 +133,10 @@ class MemoryGenerator(object):
             self.h_lm[mode] = interpolated_mode[times]
         self.times = times
 
-    def zero_pad_h_lm(self):
-        required_zeros = len(self.times) - len(self.h_lm[(2, 2)])
+    def zero_pad_h_lm(self, mode=None):
+        if mode is None:
+            mode = (2, 2)
+        required_zeros = len(self.times) - len(self.h_lm[mode])
         if required_zeros == 0:
             return
         elif required_zeros > 0:
@@ -1003,6 +1017,162 @@ class Approximant(MemoryGenerator):
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
 
+class PhenomXHM(Approximant):
+
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
+        name = "IMRPhenomXHM"
+        super().__init__(name, q, MTot, S1, S2, distance, times)
+
+    @property
+    def available_modes(self):
+        return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        if self.h_lm is None:
+            if modes is None:
+                modes = self.available_modes
+
+            if not set(modes).issubset(self.available_modes):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
+                modes = list(set(modes).union(self.available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            self.h_lm = dict()
+            for mode in modes:
+                h_lm, times = self.single_mode_from_choose_td(l=mode[0], m=mode[1], mbandthreshold=0)
+                self.h_lm[mode] = h_lm
+            self.zero_pad_h_lm(mode=modes[0])
+
+        if inc is None or phase is None:
+            return self.h_lm
+        else:
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+    def time_domain_oscillatory_from_polarisations(self, inc, phase):
+        hpc, times = self.polarisations(mbandthreshold=0, inc=inc, phase=phase)
+
+        required_zeros = len(self.times) - len(hpc['plus'])
+        if required_zeros == 0:
+            return hpc
+        elif required_zeros > 0:
+            for mode in hpc:
+                result = np.zeros(self.times.shape, dtype=np.complex128)
+                result[:hpc[mode].shape[0]] = hpc[mode]
+                hpc[mode] = result
+        elif required_zeros < 0:
+            for mode in hpc:
+                hpc[mode] = hpc[mode][-self.times.shape[0]:]
+        return hpc
+
+    def single_mode_from_choose_td(self, l, m, mbandthreshold):
+        inc = 0.4
+        phi = np.pi / 2
+        lalparams = lal.CreateDict()
+        ModeArray = lalsim.SimInspiralCreateModeArray()
+        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
+        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
+        if (mbandthreshold != None):
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        hpc, times = self.get_polarisations(inc=inc, phase=phi, lalparams=lalparams)
+        Ylm = lal.SpinWeightedSphericalHarmonic(inc, phi, -2, l, m)
+        hlm = (hpc['plus'] - 1j * hpc['cross']) / Ylm
+
+        return hlm, times
+
+    def polarisations(self, mbandthreshold, inc, phase):
+        lalparams = lal.CreateDict()
+        if (mbandthreshold != None):
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        hpc, times = self.get_polarisations(inc=inc, phase=phase + np.pi, lalparams=lalparams)
+        # +np.pi for reasons, otherwise odd m modes flip sign
+        return hpc, times
+
+    def get_polarisations(self, inc, phase, lalparams):
+        f_min = 20.
+        f_ref = 20.
+        longAscNodes = 0.0
+        eccentricity = 0.0
+        meanPerAno = 0.0
+
+        hp, hc = lalsim.SimInspiralChooseTDWaveform(
+            self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
+            self.distance_SI, inc, phase, longAscNodes, eccentricity, meanPerAno, self.delta_t, f_min, f_ref,
+            lalparams, lalsim.IMRPhenomXHM)
+
+        shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
+        times = np.arange(len(hp.data.data)) * self.delta_t + shift
+        hpc = dict()
+        hpc['plus'] = hp.data.data
+        hpc['cross'] = hc.data.data
+        return hpc, times
+
+
+class PhenomXPHM(Approximant):
+
+    def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]),
+                 distance=400, reference_frequency=10, times=None):
+        name = "IMRPhenomXPHM"
+        super().__init__(name, q, MTot, S1, S2, distance, times)
+        self.reference_frequency = reference_frequency
+
+    @property
+    def available_modes(self):
+        all_modes = [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+        missing_modes = [(2, 0), (3, 0), (4, 0), (3, 2), (3, -1), (3, 1), (4, -3), (4, 3), (4, -2), (4, 2), (4, -1), (4, 1)]
+        all_modes.extend(missing_modes)
+        return all_modes
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        if self.h_lm is None:
+            if modes is None:
+                modes = self.available_modes
+
+            if not set(modes).issubset(self.available_modes):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
+                modes = list(set(modes).union(self.available_modes))
+                print('Using modes {}'.format(' '.join(modes)))
+
+            self.h_lm = dict()
+            h_lm_fd = dict()
+            for mode in modes:
+                h_pos, h_neg, _ = self.single_mode_xphm(l=mode[0], m=mode[1])
+                h_neg = h_neg[::-1]  # Invert order of negative frequencies
+                h_neg = h_neg[:-1]  # Remove redundant zero frequency
+                h_lm_fd[mode] = np.concatenate([h_pos, h_neg])  # Attach inverted negative frequencies to match np.ifft convention
+                self.h_lm[mode] = np.fft.ifft(h_lm_fd[mode], n=len(self.times)) * self.sampling_frequency
+                self.h_lm[mode] = np.roll(self.h_lm[mode], int(len(self.h_lm[mode])/2))  # Put the merger in the middle of the time segment, otherwise memory won't be computed properly
+
+        if inc is None or phase is None:
+            return self.h_lm
+        else:
+            return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
+
+    def single_mode_xphm(self, l, m):
+        f_min = 20.
+        f_max = 1024.
+        phiRef = 2.
+        lalparams = lal.CreateDict()
+        lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
+        hlmpos, hlmneg = lalsim.SimIMRPhenomXPHMOneMode(
+            l, m,
+            self.m1_SI, self.m2_SI,
+            self.S1[0], self.S1[1], self.S1[2],
+            self.S2[0], self.S2[1], self.S2[2],
+            self.distance_SI, phiRef, self.delta_f,
+            f_min, f_max, self.reference_frequency, lalparams
+        )
+        freqs = np.arange(len(hlmpos.data.data)) * self.delta_f
+        hlm_pos = hlmpos.data.data
+        hlm_neg = hlmneg.data.data
+        del hlmpos
+        del hlmneg
+        del lalparams
+        return hlm_pos, hlm_neg, freqs
+
+    def _check_prececssion(self):
+        pass
+
+
 class MWM(MemoryGenerator):
 
     def __init__(self, q, MTot=60, distance=400, name='MWM', times=None):
@@ -1158,7 +1328,8 @@ class MWM(MemoryGenerator):
 
 def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
-    total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+    # total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
+    total = sum([h_lm[(l, m)] * lal.SpinWeightedSphericalHarmonic(inc, phase, -2, l, m) for l, m in h_lm])
     h_plus_cross = dict(plus=total.real, cross=-total.imag)
     return h_plus_cross
 
