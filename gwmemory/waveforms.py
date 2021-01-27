@@ -572,7 +572,7 @@ class NRSur7dq4(BaseSurrogate):
     """
 
     def __init__(self, q, total_mass=None, S1=None, S2=None, distance=None, l_max=4, modes=None, times=None,
-                 minimum_frequency=10, reference_frequency=50., units='mks'):
+                 minimum_frequency=20., reference_frequency=20., units='mks'):
         """
         Initialise Surrogate MemoryGenerator
         Parameters
@@ -644,17 +644,13 @@ class NRSur7dq4(BaseSurrogate):
             times = self.times
         times -= times[0]
         if self.h_lm is None:
-            data = self.sur(q=self.q, chiA0=self.S1, chiB0=self.S2, M=self.MTot, dist_mpc=self.distance,
-                            dt=self.dt, f_low=0, units='mks', f_ref=self.reference_frequency)
-            t = data[0]
+            t, h_lm, _ = self.sur(q=self.q, chiA0=self.S1, chiB0=self.S2, M=self.MTot, dist_mpc=self.distance,
+                                  dt=self.dt, f_low=self.minimum_frequency, f_ref=self.reference_frequency, units='mks')
             t -= t[0]
-            h_lm = data[1]
-
-
-            old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
-            for ll, mm in old_keys:
-                if mm > 0:
-                    h_lm[(ll, -mm)] = (- 1)**ll * np.conj(h_lm[(ll, mm)])
+            # old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
+            # for ll, mm in old_keys:
+            #     if mm > 0:
+            #         h_lm[(ll, -mm)] = (- 1)**ll * np.conj(h_lm[(ll, mm)])
 
             available_modes = set(h_lm.keys())
 
