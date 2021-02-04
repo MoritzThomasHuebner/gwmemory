@@ -603,71 +603,37 @@ class NRSur7dq4(BaseSurrogate):
         self.modes = modes
         self.reference_frequency = reference_frequency
         self.units = units
-
+        self.l_max = l_max
+        self.approximant = lalsim.GetApproximantFromString("NRSur7dq4")
         self.h_lm = None
         self.dt = times[1] - times[0]
+        self.available_modes = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
+                                (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
+                                (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
 
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
         h_lm, _ = self.time_domain_oscillatory(modes=self.modes, times=times)
 
-    def time_domain_oscillatory(self, times=None, modes=None, inc=None,
-                                phase=None):
-        """
-        Get the mode decomposition of the surrogate waveform.
-        Calculates a BBH waveform using the surrogate models of Field et al.
-        (2014), Blackman et al. (2017)
-        http://journals.aps.org/prx/references/10.1103/PhysRevX.4.031006,
-        https://arxiv.org/abs/1705.07089
-        See https://data.black-holes.org/surrogates/index.html for more
-        information.
-        Parameters
-        ----------
-        times: np.array, optional
-            Time array on which to evaluate the waveform.
-        modes: list, optional
-            List of modes to try to generate.
-        inc: float, optional
-            Inclination of the source, if None, the spherical harmonic modes
-            will be returned.
-        phase: float, optional
-            Phase at coalescence of the source, if None, the spherical harmonic
-            modes will be returned.
-        Returns
-        -------
-        h_lm: dict
-            Spin-weighted spherical harmonic decomposed waveform.
-        times: np.array
-            Times on which waveform is evaluated.
-        """
+    def time_domain_oscillatory(self, times=None, inc=None, phase=None):
         if times is None:
             times = self.times
         times -= times[0]
         if self.h_lm is None:
-            t, h_lm, _ = self.sur(q=self.q, chiA0=self.S1, chiB0=self.S2, M=self.MTot, dist_mpc=self.distance,
-                                  dt=self.dt, f_low=self.minimum_frequency, f_ref=self.reference_frequency, units='mks')
-            t -= t[0]
-            # old_keys = [(ll, mm) for ll, mm in h_lm.keys()]
-            # for ll, mm in old_keys:
-            #     if mm > 0:
-            #         h_lm[(ll, -mm)] = (- 1)**ll * np.conj(h_lm[(ll, mm)])
+            lal_params = lal.CreateDict()
+            data = lalsim.SimInspiralChooseTDModes(
+                0.0, self.dt, self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2],
+                self.S2[0], self.S2[1], self.S2[2], self.minimum_frequency,
+                self.reference_frequency, self.distance_SI, lal_params, self.l_max, self.approximant)
 
-            available_modes = set(h_lm.keys())
-
-            if modes is None:
-                modes = available_modes
-
-            if not set(modes).issubset(available_modes):
-                print('Requested {} unavailable modes'.format(
-                    ' '.join(set(modes).difference(available_modes))))
-                modes = list(set(modes).union(available_modes))
-                print('Using modes {}'.format(' '.join(modes)))
-
-            h_lm = {(ell, m): h_lm[ell, m] for ell, m in modes}
-            self.h_lm = h_lm
+            h_lm = {(lm[0], lm[1]): lalsim.SphHarmTimeSeriesGetMode(data, lm[0], lm[1]).data.data
+                    for lm in self.available_modes}
+            t = np.arange(len(h_lm[(2, 2)])) * self.delta_t
         else:
             h_lm = self.h_lm
             times = self.times
+            t = self.times
+
         for mode in h_lm.keys():
             if len(times) != len(h_lm[mode]):
                 h_lm[mode] = interp1d(t, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
@@ -675,7 +641,52 @@ class NRSur7dq4(BaseSurrogate):
         if inc is None or phase is None:
             return h_lm, times
         else:
-            return combine_modes(h_lm, inc, phase), times
+            return combine_modes(h_lm, inc, np.pi/2 - phase), times
+
+    def time_domain_oscillatory_from_polarisations(self, inc, phase):
+
+        lal_params = lal.CreateDict()
+
+        hp, hc = lalsim.SimInspiralChooseTDWaveform(
+            self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
+            self.distance_SI, inc, phase, 0.0, 0.0, 0.0, self.delta_t, self.minimum_frequency,
+            self.reference_frequency, lal_params, self.approximant)
+        hpc = dict()
+        hpc['plus'] = hp.data.data
+        hpc['cross'] = hc.data.data
+
+        required_zeros = len(self.times) - len(hpc['plus'])
+        if required_zeros == 0:
+            return hpc
+        elif required_zeros > 0:
+            for mode in hpc:
+                result = np.zeros(self.times.shape, dtype=np.complex128)
+                result[:hpc[mode].shape[0]] = hpc[mode]
+                hpc[mode] = result
+        elif required_zeros < 0:
+            for mode in hpc:
+                hpc[mode] = hpc[mode][-self.times.shape[0]:]
+        return hpc
+
+    @property
+    def m1(self):
+        return self.MTot / (1 + self.q)
+
+    @property
+    def m2(self):
+        return self.m1 * self.q
+
+    @property
+    def m1_SI(self):
+        return self.m1 * utils.solar_mass
+
+    @property
+    def m2_SI(self):
+        return self.m2 * utils.solar_mass
+
+    @property
+    def distance_SI(self):
+        return self.distance * utils.Mpc
 
 
 class SXSNumericalRelativity(MemoryGenerator):
