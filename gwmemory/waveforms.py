@@ -600,24 +600,28 @@ class NRSur7dq4(BaseSurrogate):
         self.sur = nrsur7dq4_surrogate
 
         self.minimum_frequency = minimum_frequency
-        self.modes = modes
         self.reference_frequency = reference_frequency
         self.units = units
         self.l_max = l_max
         self.approximant = lalsim.GetApproximantFromString("NRSur7dq4")
         self.h_lm = None
         self.dt = times[1] - times[0]
-        self.available_modes = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
+        self.AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
                                 (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
                                 (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
-
+        if modes is None:
+            self.modes = self.AVAILABLE_MODES
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
         h_lm, _ = self.time_domain_oscillatory(modes=self.modes, times=times)
 
-    def time_domain_oscillatory(self, times=None, inc=None, phase=None):
+    def time_domain_oscillatory(self, modes=None, times=None, inc=None, phase=None):
         if times is None:
             times = self.times
+
+        if modes is None:
+            modes = self.modes
+
         times -= times[0]
         if self.h_lm is None:
             lal_params = lal.CreateDict()
@@ -627,7 +631,7 @@ class NRSur7dq4(BaseSurrogate):
                 self.reference_frequency, self.distance_SI, lal_params, self.l_max, self.approximant)
 
             h_lm = {(lm[0], lm[1]): lalsim.SphHarmTimeSeriesGetMode(data, lm[0], lm[1]).data.data
-                    for lm in self.available_modes}
+                    for lm in modes}
             t = np.arange(len(h_lm[(2, 2)])) * self.delta_t
         else:
             h_lm = self.h_lm
@@ -651,9 +655,7 @@ class NRSur7dq4(BaseSurrogate):
             self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
             self.distance_SI, inc, phase, 0.0, 0.0, 0.0, self.delta_t, self.minimum_frequency,
             self.reference_frequency, lal_params, self.approximant)
-        hpc = dict()
-        hpc['plus'] = hp.data.data
-        hpc['cross'] = hc.data.data
+        hpc = dict(plus=hp.data.data, cross=hc.data.data)
 
         required_zeros = len(self.times) - len(hpc['plus'])
         if required_zeros == 0:
