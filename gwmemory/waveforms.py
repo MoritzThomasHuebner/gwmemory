@@ -609,11 +609,13 @@ class NRSur7dq4(BaseSurrogate):
         self.AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
                                 (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
                                 (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
-        if modes is None:
-            self.modes = self.AVAILABLE_MODES
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
-        h_lm, _ = self.time_domain_oscillatory(modes=self.modes, times=times)
+        if modes is None:
+            self.modes = self.AVAILABLE_MODES
+        else:
+            self.modes = modes
+        self.h_lm, self.times = self.time_domain_oscillatory(modes=self.modes, times=times)
 
     def time_domain_oscillatory(self, modes=None, times=None, inc=None, phase=None):
         if times is None:
@@ -629,10 +631,9 @@ class NRSur7dq4(BaseSurrogate):
                 0.0, self.dt, self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2],
                 self.S2[0], self.S2[1], self.S2[2], self.minimum_frequency,
                 self.reference_frequency, self.distance_SI, lal_params, self.l_max, self.approximant)
-
-            h_lm = {(lm[0], lm[1]): lalsim.SphHarmTimeSeriesGetMode(data, lm[0], lm[1]).data.data
-                    for lm in modes}
-            t = np.arange(len(h_lm[(2, 2)])) * self.delta_t
+            h_lm = {(l, m): lalsim.SphHarmTimeSeriesGetMode(data, l, m).data.data
+                    for l, m in modes}
+            t = np.arange(len(h_lm[list(h_lm.keys())[0]])) * self.delta_t
         else:
             h_lm = self.h_lm
             times = self.times
