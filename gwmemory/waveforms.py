@@ -7,10 +7,15 @@ import lalsimulation as lalsim
 import NRSur7dq2
 from scipy.interpolate import interp1d
 from .utils import cc, GG, Mpc, solar_mass
-import gwsurrogate
-
-hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
-nrsur7dq4_surrogate = gwsurrogate.LoadSurrogate('NRSur7dq4')
+try:
+    import gwsurrogate
+    hybrid_surrogate = gwsurrogate.LoadSurrogate('NRHybSur3dq8')
+    nrsur7dq4_surrogate = gwsurrogate.LoadSurrogate('NRSur7dq4')
+except ModuleNotFoundError as e:
+    print(e)
+    gwsurrogate = None
+    hybrid_surrogate = None
+    nrsur7dq4_surrogate = None
 
 
 class MemoryGenerator(object):
