@@ -1006,8 +1006,7 @@ class PhenomXHM(Approximant):
         if (mbandthreshold != None):
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
         hpc, times = self.get_polarisations(inc=inc, phase=phi, lalparams=lalparams)
-        Ylm = lal.SpinWeightedSphericalHarmonic(inc, phi, -2, l, m)
-        hlm = (hpc['plus'] - 1j * hpc['cross']) / Ylm
+        hlm = (hpc['plus'] - 1j * hpc['cross']) / lal.SpinWeightedSphericalHarmonic(inc, np.pi - phi, -2, l, m)
 
         return hlm, times
 
@@ -1015,8 +1014,8 @@ class PhenomXHM(Approximant):
         lalparams = lal.CreateDict()
         if (mbandthreshold != None):
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
-        hpc, times = self.get_polarisations(inc=inc, phase=phase + np.pi, lalparams=lalparams)
-        # +np.pi for reasons, otherwise odd m modes flip sign
+        hpc, times = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
+
         return hpc, times
 
     def get_polarisations(self, inc, phase, lalparams):
