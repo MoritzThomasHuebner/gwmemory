@@ -657,7 +657,7 @@ class NRSur7dq4(BaseSurrogate):
         if inc is None or phase is None:
             return self.h_lm
         else:
-            return combine_modes(self.h_lm, inc, np.pi/2 - phase)
+            return combine_modes(self.h_lm, inc, phase)
 
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
         hp, hc = lalsim.SimInspiralChooseTDWaveform(
