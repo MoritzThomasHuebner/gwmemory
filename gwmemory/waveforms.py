@@ -138,20 +138,21 @@ class MemoryGenerator(object):
             self.h_lm[mode] = interpolated_mode[times]
         self.times = times
 
-    def zero_pad_h_lm(self, mode=None):
-        if mode is None:
-            mode = (2, 2)
-        required_zeros = len(self.times) - len(self.h_lm[mode])
-        if required_zeros == 0:
-            return
-        elif required_zeros > 0:
-            for mode in self.h_lm:
-                result = np.zeros(self.times.shape, dtype=np.complex128)
-                result[:self.h_lm[mode].shape[0]] = self.h_lm[mode]
-                self.h_lm[mode] = result
+    def zero_pad_h_lm(self):
+        for lm in self.h_lm:
+            self.h_lm[lm] = self.zero_pad_time_series(self.times, self.h_lm[lm])
+
+    @staticmethod
+    def zero_pad_time_series(times, mode):
+        required_zeros = len(times) - len(mode)
+        result = np.zeros(times.shape, dtype=np.complex128)
+        if required_zeros > 0:
+            result[:mode.shape[0]] = mode
+            return result
         elif required_zeros < 0:
-            for mode in self.h_lm:
-                self.h_lm[mode] = self.h_lm[mode][-self.times.shape[0]:]
+            return mode[-times.shape[0]:]
+        else:
+            return mode
 
 
 class HybridSurrogate(MemoryGenerator):
@@ -1038,21 +1039,17 @@ class PhenomXHM(Approximant):
     def available_modes(self):
         return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
 
+
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
             if modes is None:
                 modes = self.available_modes
 
-            if not set(modes).issubset(self.available_modes):
-                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
-                modes = list(set(modes).union(self.available_modes))
-                print('Using modes {}'.format(' '.join(modes)))
-
             self.h_lm = dict()
             for mode in modes:
                 h_lm, times = self.single_mode_from_choose_td(l=mode[0], m=mode[1], mbandthreshold=0)
                 self.h_lm[mode] = h_lm
-            self.zero_pad_h_lm(mode=modes[0])
+            self.zero_pad_h_lm()
 
         if inc is None or phase is None:
             return self.h_lm
@@ -1060,19 +1057,9 @@ class PhenomXHM(Approximant):
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
-        hpc, times = self.polarisations(mbandthreshold=0, inc=inc, phase=phase)
-
-        required_zeros = len(self.times) - len(hpc['plus'])
-        if required_zeros == 0:
-            return hpc
-        elif required_zeros > 0:
-            for mode in hpc:
-                result = np.zeros(self.times.shape, dtype=np.complex128)
-                result[:hpc[mode].shape[0]] = hpc[mode]
-                hpc[mode] = result
-        elif required_zeros < 0:
-            for mode in hpc:
-                hpc[mode] = hpc[mode][-self.times.shape[0]:]
+        hpc, _ = self.polarisations(mbandthreshold=0, inc=inc, phase=phase)
+        for mode in hpc:
+            hpc[mode] = self.zero_pad_time_series(times=self.times, mode=hpc[mode])
         return hpc
 
     def single_mode_from_choose_td(self, l, m, mbandthreshold):
