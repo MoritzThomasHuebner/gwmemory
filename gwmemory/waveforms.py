@@ -1186,7 +1186,7 @@ class MWM(MemoryGenerator):
 def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
     # total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
-    total = sum([h_lm[(l, m)] * lal.SpinWeightedSphericalHarmonic(inc, phase, -2, l, m) for l, m in h_lm])
+    total = sum([h_lm[(l, m)] * lal.SpinWeightedSphericalHarmonic(inc, np.pi - phase, -2, l, m) for l, m in h_lm])
     h_plus_cross = dict(plus=total.real, cross=-total.imag)
     return h_plus_cross
 
