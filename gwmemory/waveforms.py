@@ -973,7 +973,6 @@ class PhenomXHM(Approximant):
     def available_modes(self):
         return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
 
-
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
             if modes is None:
@@ -981,7 +980,7 @@ class PhenomXHM(Approximant):
 
             self.h_lm = dict()
             for mode in modes:
-                h_lm, times = self.single_mode_from_choose_td(l=mode[0], m=mode[1], mbandthreshold=0)
+                h_lm, times = self.single_mode_from_choose_td(l=mode[0], m=mode[1])
                 self.h_lm[mode] = h_lm
             self.zero_pad_h_lm()
 
@@ -991,38 +990,19 @@ class PhenomXHM(Approximant):
             return combine_modes(h_lm=self.h_lm, inc=inc, phase=phase)
 
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
-        hpc, _ = self.polarisations(mbandthreshold=0, inc=inc, phase=phase)
-        for mode in hpc:
-            hpc[mode] = self.zero_pad_time_series(times=self.times, mode=hpc[mode])
-        return hpc
+        lalparams = lal.CreateDict()
+        lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
+        hpc, times = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
+        return {mode: self.zero_pad_time_series(times=self.times, mode=hpc[mode]) for mode in hpc}
 
-    def single_mode_from_choose_td(self, l, m, mbandthreshold):
+    def single_mode_from_choose_td(self, l, m):
         inc = 0.4
         phi = np.pi / 2
-        lalparams = self._get_single_mode_lalparams(l, m, mbandthreshold)
+        lalparams = self._get_single_mode_lalparams_dict(l, m)
 
         hpc, times = self.get_polarisations(inc=inc, phase=phi, lalparams=lalparams)
         hlm = (hpc['plus'] - 1j * hpc['cross']) / lal.SpinWeightedSphericalHarmonic(inc, np.pi - phi, -2, l, m)
-
         return hlm, times
-
-    @staticmethod
-    def _get_single_mode_lalparams(l, m, mbandthreshold):
-        lalparams = lal.CreateDict()
-        ModeArray = lalsim.SimInspiralCreateModeArray()
-        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
-        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
-        if mbandthreshold != None:
-            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
-        return lalparams
-
-    def polarisations(self, mbandthreshold, inc, phase):
-        lalparams = lal.CreateDict()
-        if mbandthreshold != None:
-            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
-        hpc, times = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
-
-        return hpc, times
 
     def get_polarisations(self, inc, phase, lalparams):
         f_min = 20.
@@ -1041,6 +1021,14 @@ class PhenomXHM(Approximant):
         hpc = dict(plus=hp.data.data, cross=hc.data.data)
         return hpc, times
 
+    @staticmethod
+    def _get_single_mode_lalparams_dict(l, m):
+        lalparams = lal.CreateDict()
+        ModeArray = lalsim.SimInspiralCreateModeArray()
+        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
+        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
+        lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
+        return lalparams
 
 class MWM(MemoryGenerator):
 
