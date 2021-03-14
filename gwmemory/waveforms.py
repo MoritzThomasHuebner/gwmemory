@@ -399,6 +399,26 @@ class BaseSurrogate(MemoryGenerator):
             self.__s2 = np.array(S2)
 
     @property
+    def m1(self):
+        return self.MTot / (1 + self.q)
+
+    @property
+    def m2(self):
+        return self.m1 * self.q
+
+    @property
+    def m1_SI(self):
+        return self.m1 * utils.solar_mass
+
+    @property
+    def m2_SI(self):
+        return self.m2 * utils.solar_mass
+
+    @property
+    def distance_SI(self):
+        return self.distance * utils.Mpc
+
+    @property
     def h_to_geo(self):
         if self.MTot is None:
             return 1
@@ -612,9 +632,7 @@ class NRSur7dq4(BaseSurrogate):
         self.reference_frequency = reference_frequency
         self.units = units
         self.l_max = l_max
-        self.approximant = lalsim.GetApproximantFromString("NRSur7dq4")
         self.h_lm = None
-        self.dt = times[1] - times[0]
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
         if modes is None:
@@ -630,9 +648,9 @@ class NRSur7dq4(BaseSurrogate):
                 modes = self.AVAILABLE_MODES
             lal_params = lal.CreateDict()
             data = lalsim.SimInspiralChooseTDModes(
-                0.0, self.dt, self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2],
+                0.0, self.delta_t, self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2],
                 self.S2[0], self.S2[1], self.S2[2], self.minimum_frequency,
-                self.reference_frequency, self.distance_SI, lal_params, self.l_max, self.approximant)
+                self.reference_frequency, self.distance_SI, lal_params, self.l_max, lalsim.NRSur7dq4)
             self.h_lm = {(l, m): lalsim.SphHarmTimeSeriesGetMode(data, l, m).data.data for l, m in modes}
             self.zero_pad_h_lm()
 
@@ -648,41 +666,9 @@ class NRSur7dq4(BaseSurrogate):
         hp, hc = lalsim.SimInspiralChooseTDWaveform(
             self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
             self.distance_SI, inc, phase, 0.0, 0.0, 0.0, self.delta_t, self.minimum_frequency,
-            self.reference_frequency, lal_params, self.approximant)
+            self.reference_frequency, lal_params, lalsim.NRSur7dq4)
         hpc = dict(plus=hp.data.data, cross=hc.data.data)
-
-        required_zeros = len(self.times) - len(hpc['plus'])
-        if required_zeros == 0:
-            return hpc
-        elif required_zeros > 0:
-            for mode in hpc:
-                result = np.zeros(self.times.shape, dtype=np.complex128)
-                result[:hpc[mode].shape[0]] = hpc[mode]
-                hpc[mode] = result
-        elif required_zeros < 0:
-            for mode in hpc:
-                hpc[mode] = hpc[mode][-self.times.shape[0]:]
-        return hpc
-
-    @property
-    def m1(self):
-        return self.MTot / (1 + self.q)
-
-    @property
-    def m2(self):
-        return self.m1 * self.q
-
-    @property
-    def m1_SI(self):
-        return self.m1 * utils.solar_mass
-
-    @property
-    def m2_SI(self):
-        return self.m2 * utils.solar_mass
-
-    @property
-    def distance_SI(self):
-        return self.distance * utils.Mpc
+        return {mode: self.zero_pad_time_series(times=self.times, mode=hpc[mode]) for mode in hpc}
 
 
 class SXSNumericalRelativity(MemoryGenerator):
@@ -975,7 +961,7 @@ class PhenomXHM(Approximant):
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
         lalparams = lal.CreateDict()
         lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
-        hpc, times = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
+        hpc, _ = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
         return {mode: self.zero_pad_time_series(times=self.times, mode=hpc[mode]) for mode in hpc}
 
     def single_mode_from_choose_td(self, l, m):
