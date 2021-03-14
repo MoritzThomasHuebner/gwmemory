@@ -787,6 +787,8 @@ class SXSNumericalRelativity(MemoryGenerator):
 
 class Approximant(MemoryGenerator):
 
+    available_modes = [(2, 2), (2, -2)]
+
     def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         """
         Initialise Surrogate MemoryGenerator
@@ -816,10 +818,6 @@ class Approximant(MemoryGenerator):
         self._check_prececssion()
 
         MemoryGenerator.__init__(self, name=name, times=times, distance=distance)
-
-    @property
-    def available_modes(self):
-        return [(2, 2), (2, -2)]
 
     @property
     def m1(self):
@@ -965,13 +963,11 @@ class Approximant(MemoryGenerator):
 
 class PhenomXHM(Approximant):
 
+    available_modes = [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+
     def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         name = "IMRPhenomXHM"
         super().__init__(name, q, MTot, S1, S2, distance, times)
-
-    @property
-    def available_modes(self):
-        return [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
 
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
