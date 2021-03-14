@@ -444,7 +444,7 @@ class BaseSurrogate(MemoryGenerator):
             return None
 
 
-class Surrogate(BaseSurrogate):
+class NRSur7dq2(BaseSurrogate):
     """
     Memory generator for a numerical relativity surrogate.
 
