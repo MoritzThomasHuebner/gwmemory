@@ -574,6 +574,7 @@ class Surrogate(BaseSurrogate):
 
 
 class NRSur7dq4(BaseSurrogate):
+
     AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
                        (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
                        (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
@@ -635,11 +636,7 @@ class NRSur7dq4(BaseSurrogate):
         self.h_lm = None
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
-        if modes is None:
-            self.modes = self.AVAILABLE_MODES
-        else:
-            self.modes = modes
-        self.h_lm = self.time_domain_oscillatory()
+        self.h_lm = self.time_domain_oscillatory(modes=modes)
         self.zero_pad_h_lm()
 
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
