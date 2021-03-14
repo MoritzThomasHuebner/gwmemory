@@ -660,13 +660,10 @@ class NRSur7dq4(BaseSurrogate):
             return combine_modes(self.h_lm, inc, np.pi/2 - phase)
 
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
-
-        lal_params = lal.CreateDict()
-
         hp, hc = lalsim.SimInspiralChooseTDWaveform(
             self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2], self.S2[0], self.S2[1], self.S2[2],
             self.distance_SI, inc, phase, 0.0, 0.0, 0.0, self.delta_t, self.minimum_frequency,
-            self.reference_frequency, lal_params, lalsim.NRSur7dq4)
+            self.reference_frequency, lal.CreateDict(), lalsim.NRSur7dq4)
         hpc = dict(plus=hp.data.data, cross=hc.data.data)
         return {mode: self.zero_pad_time_series(times=self.times, mode=hpc[mode]) for mode in hpc}
 
