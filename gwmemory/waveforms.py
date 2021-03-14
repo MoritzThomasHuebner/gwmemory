@@ -999,20 +999,26 @@ class PhenomXHM(Approximant):
     def single_mode_from_choose_td(self, l, m, mbandthreshold):
         inc = 0.4
         phi = np.pi / 2
-        lalparams = lal.CreateDict()
-        ModeArray = lalsim.SimInspiralCreateModeArray()
-        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
-        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
-        if (mbandthreshold != None):
-            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        lalparams = self._get_single_mode_lalparams(l, m, mbandthreshold)
+
         hpc, times = self.get_polarisations(inc=inc, phase=phi, lalparams=lalparams)
         hlm = (hpc['plus'] - 1j * hpc['cross']) / lal.SpinWeightedSphericalHarmonic(inc, np.pi - phi, -2, l, m)
 
         return hlm, times
 
+    @staticmethod
+    def _get_single_mode_lalparams(l, m, mbandthreshold):
+        lalparams = lal.CreateDict()
+        ModeArray = lalsim.SimInspiralCreateModeArray()
+        lalsim.SimInspiralModeArrayActivateMode(ModeArray, l, m)
+        lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
+        if mbandthreshold != None:
+            lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
+        return lalparams
+
     def polarisations(self, mbandthreshold, inc, phase):
         lalparams = lal.CreateDict()
-        if (mbandthreshold != None):
+        if mbandthreshold != None:
             lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, mbandthreshold)
         hpc, times = self.get_polarisations(inc=inc, phase=phase, lalparams=lalparams)
 
@@ -1032,9 +1038,7 @@ class PhenomXHM(Approximant):
 
         shift = hp.epoch.gpsSeconds + hp.epoch.gpsNanoSeconds / 1e9
         times = np.arange(len(hp.data.data)) * self.delta_t + shift
-        hpc = dict()
-        hpc['plus'] = hp.data.data
-        hpc['cross'] = hc.data.data
+        hpc = dict(plus=hp.data.data, cross=hc.data.data)
         return hpc, times
 
 
