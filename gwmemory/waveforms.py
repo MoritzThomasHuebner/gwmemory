@@ -554,6 +554,9 @@ class Surrogate(BaseSurrogate):
 
 
 class NRSur7dq4(BaseSurrogate):
+    AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
+                       (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
+                       (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
 
     """
     Memory generator for a numerical relativity surrogate.
@@ -612,9 +615,6 @@ class NRSur7dq4(BaseSurrogate):
         self.approximant = lalsim.GetApproximantFromString("NRSur7dq4")
         self.h_lm = None
         self.dt = times[1] - times[0]
-        self.AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
-                                (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
-                                (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
         super().__init__(q=q, name='NRSur7dq4', MTot=total_mass, S1=S1, S2=S2,
                          distance=distance, LMax=l_max, max_q=4, times=times)
         if modes is None:
@@ -787,7 +787,7 @@ class SXSNumericalRelativity(MemoryGenerator):
 
 class Approximant(MemoryGenerator):
 
-    available_modes = [(2, 2), (2, -2)]
+    AVAILABLE_MODES = [(2, 2), (2, -2)]
 
     def __init__(self, name, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         """
@@ -926,13 +926,13 @@ class Approximant(MemoryGenerator):
         """
         if self.h_lm is None:
             if modes is None:
-                modes = self.available_modes
+                modes = self.AVAILABLE_MODES
             else:
                 modes = modes
 
-            if not set(modes).issubset(self.available_modes):
-                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.available_modes))))
-                modes = list(set(modes).union(self.available_modes))
+            if not set(modes).issubset(self.AVAILABLE_MODES):
+                print('Requested {} unavailable modes'.format(' '.join(set(modes).difference(self.AVAILABLE_MODES))))
+                modes = list(set(modes).union(self.AVAILABLE_MODES))
                 print('Using modes {}'.format(' '.join(modes)))
 
             fmin = 20.
@@ -963,7 +963,7 @@ class Approximant(MemoryGenerator):
 
 class PhenomXHM(Approximant):
 
-    available_modes = [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
+    AVAILABLE_MODES = [(2, 2), (2, -2), (2, 1), (2, -1), (3, 3), (3, -3), (3, 2), (3, -2), (4, 4), (4, -4)]
 
     def __init__(self, q, MTot=60, S1=np.array([0, 0, 0]), S2=np.array([0, 0, 0]), distance=400, times=None):
         name = "IMRPhenomXHM"
@@ -1025,6 +1025,7 @@ class PhenomXHM(Approximant):
         lalsim.SimInspiralWaveformParamsInsertModeArray(lalparams, ModeArray)
         lalsim.SimInspiralWaveformParamsInsertPhenomXHMThresholdMband(lalparams, 0)
         return lalparams
+
 
 class MWM(MemoryGenerator):
 
