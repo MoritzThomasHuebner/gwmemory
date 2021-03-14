@@ -621,38 +621,25 @@ class NRSur7dq4(BaseSurrogate):
             self.modes = self.AVAILABLE_MODES
         else:
             self.modes = modes
-        self.h_lm, self.times = self.time_domain_oscillatory(modes=self.modes, times=times)
+        self.h_lm = self.time_domain_oscillatory()
+        self.zero_pad_h_lm()
 
-    def time_domain_oscillatory(self, modes=None, times=None, inc=None, phase=None):
-        if times is None:
-            times = self.times
-
-        if modes is None:
-            modes = self.modes
-
-        times -= times[0]
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
+            if modes is None:
+                modes = self.AVAILABLE_MODES
             lal_params = lal.CreateDict()
             data = lalsim.SimInspiralChooseTDModes(
                 0.0, self.dt, self.m1_SI, self.m2_SI, self.S1[0], self.S1[1], self.S1[2],
                 self.S2[0], self.S2[1], self.S2[2], self.minimum_frequency,
                 self.reference_frequency, self.distance_SI, lal_params, self.l_max, self.approximant)
-            h_lm = {(l, m): lalsim.SphHarmTimeSeriesGetMode(data, l, m).data.data
-                    for l, m in modes}
-            t = np.arange(len(h_lm[list(h_lm.keys())[0]])) * self.delta_t
-        else:
-            h_lm = self.h_lm
-            times = self.times
-            t = self.times
-
-        for mode in h_lm.keys():
-            if len(times) != len(h_lm[mode]):
-                h_lm[mode] = interp1d(t, h_lm[mode], bounds_error=False, fill_value=0.0)(times)
+            self.h_lm = {(l, m): lalsim.SphHarmTimeSeriesGetMode(data, l, m).data.data for l, m in modes}
+            self.zero_pad_h_lm()
 
         if inc is None or phase is None:
-            return h_lm, times
+            return self.h_lm
         else:
-            return combine_modes(h_lm, inc, np.pi/2 - phase), times
+            return combine_modes(self.h_lm, inc, np.pi/2 - phase)
 
     def time_domain_oscillatory_from_polarisations(self, inc, phase):
 
@@ -972,7 +959,7 @@ class PhenomXHM(Approximant):
     def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
         if self.h_lm is None:
             if modes is None:
-                modes = self.available_modes
+                modes = self.AVAILABLE_MODES
 
             self.h_lm = dict()
             for mode in modes:
