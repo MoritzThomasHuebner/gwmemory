@@ -1018,6 +1018,136 @@ class MWM(MemoryGenerator):
         return h_mem, times
 
 
+class TEOBResumS(MemoryGenerator):
+
+    AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
+                       (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
+                       (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
+
+    def __init__(self, q, MTot=None, chi_1=0., chi_2=0., distance=None,
+                 l_max=4, max_q=20, times=None, minimum_frequency=35., ecc=0):
+
+        self.max_q = max_q
+        self.q = q
+        self.MTot = MTot
+        self.chi_1 = chi_1
+        self.chi_2 = chi_2
+        self.LMax = l_max
+        self.times = times
+        self.ecc = ecc
+
+        self.minimum_frequency = minimum_frequency
+        self.l_max = l_max
+        super().__init__(name='TEOBResumS', h_lm=None, times=times, distance=distance)
+        self.h_lm = self.time_domain_oscillatory(modes=[[2, 2]])
+
+    @property
+    def q(self):
+        return self.__q
+
+    @q.setter
+    def q(self, q):
+        if q < 1:
+            q = 1 / q
+        if q > self.max_q:
+            print(f'WARNING: Surrogate waveform not tested for q>{self.max_q}.')
+        self.__q = q
+
+    @property
+    def S1(self):
+        return self.__s1
+
+    @S1.setter
+    def S1(self, S1):
+        if S1 is None:
+            self.__s1 = np.array([0., 0., 0.])
+        else:
+            self.__s1 = np.array(S1)
+
+    @property
+    def S2(self):
+        return self.__s2
+
+    @S2.setter
+    def S2(self, S2):
+        if S2 is None:
+            self.__s2 = np.array([0., 0., 0.])
+        else:
+            self.__s2 = np.array(S2)
+
+    @property
+    def m1(self):
+        return self.MTot / (1 + self.q)
+
+    @property
+    def m2(self):
+        return self.m1 * self.q
+
+    @property
+    def m1_SI(self):
+        return self.m1 * utils.solar_mass
+
+    @property
+    def m2_SI(self):
+        return self.m2 * utils.solar_mass
+
+    @property
+    def distance_SI(self):
+        return self.distance * utils.Mpc
+
+    def time_domain_oscillatory(self, modes=None, inc=None, phase=None):
+        if self.h_lm is None:
+            import EOBRun_module
+            if modes is None:
+                modes = [[2, 2]]
+
+            def modes_to_k(modes):
+                return [int(x[0] * (x[0] - 1) / 2 + x[1] - 2) for x in modes]
+
+            k = modes_to_k([[2, 2]])
+
+            coalescing_angle = phase if phase is not None else 0.0
+            inclination = inc if inc is not None else 0.0
+            print(k)
+            parameters = {
+                'M': self.MTot,
+                'q': self.q,  # q > 1
+                'ecc': self.ecc,
+                'Lambda1': 0.,
+                'Lambda2': 0.,
+                'chi1': self.chi_1,
+                'chi2': self.chi_2,
+                'coalescence_angle': coalescing_angle,
+                'domain': 0,  # TD
+                'arg_out': 1,  # Output hlm/hflm. Default = 0
+                'use_mode_lm': k,  # List of modes to use/output through EOBRunPy
+                'srate_interp': 4096.,  # srate at which to interpolate. Default = 4096.
+                'use_geometric_units': 0,  # Output quantities in geometric units. Default = 1
+                'initial_frequency': self.minimum_frequency,  # in Hz if use_geometric_units = 0, else in geometric units
+                'interp_uniform_grid': 1,  # Interpolate mode by mode on a uniform grid. Default = 0 (no interpolation)
+                'distance': self.distance,
+                'inclination': inclination,
+                # - (np.pi / 4), # = iota for non-precessing; adjusted to match IMRPhenomD definition
+                'output_hpc': 0
+            }
+            # print(parameters)
+
+            # Run wf generator
+            t, hplus, hcross, hlm, dyn = EOBRun_module.EOBRunPy(parameters)
+            # t, hplus, hcross, hlm = EOBRun_module.EOBRunPy(parameters)
+
+            h = hplus - 1j * hcross
+            h_22 = h / harmonics.sYlm(-2, 2, 2, inclination, coalescing_angle)
+
+            self.h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
+            self.zero_pad_h_lm()
+
+        if inc is None or phase is None:
+            return self.h_lm
+        else:
+            return combine_modes(self.h_lm, inc, phase)
+
+
 def combine_modes(h_lm, inc, phase):
     """Calculate the plus and cross polarisations of the waveform from the spherical harmonic decomposition."""
     # total = sum([h_lm[(l, m)] * harmonics.sYlm(-2, l, m, inc, phase) for l, m in h_lm])
