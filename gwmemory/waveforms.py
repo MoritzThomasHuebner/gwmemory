@@ -1020,26 +1020,21 @@ class MWM(MemoryGenerator):
 
 class TEOBResumS(MemoryGenerator):
 
-    AVAILABLE_MODES = [(2, -2), (2, -1), (2, 0), (2, 1), (2, 2), (3, -3), (3, -2),
-                       (3, -1), (3, 0), (3, 1), (3, 2), (3, 3), (4, -4), (4, -3),
-                       (4, -2), (4, -1), (4, 0), (4, 1), (4, 2), (4, 3), (4, 4)]
+    AVAILABLE_MODES = None
 
     def __init__(self, q, MTot=None, chi_1=0., chi_2=0., distance=None,
-                 l_max=4, max_q=20, times=None, minimum_frequency=35., ecc=0):
+                 max_q=20, times=None, minimum_frequency=35., ecc=0):
 
         self.max_q = max_q
         self.q = q
         self.MTot = MTot
         self.chi_1 = chi_1
         self.chi_2 = chi_2
-        self.LMax = l_max
         self.times = times
         self.ecc = ecc
 
         self.minimum_frequency = minimum_frequency
-        self.l_max = l_max
         super().__init__(name='TEOBResumS', h_lm=None, times=times, distance=distance)
-        self.h_lm = self.time_domain_oscillatory(modes=[[2, 2]])
 
     @property
     def q(self):
@@ -1104,42 +1099,41 @@ class TEOBResumS(MemoryGenerator):
             def modes_to_k(modes):
                 return [int(x[0] * (x[0] - 1) / 2 + x[1] - 2) for x in modes]
 
-            k = modes_to_k([[2, 2]])
+            ks = modes_to_k(modes)
 
             coalescing_angle = phase if phase is not None else 0.0
             inclination = inc if inc is not None else 0.0
-            print(k)
-            parameters = {
-                'M': self.MTot,
-                'q': self.q,  # q > 1
-                'ecc': self.ecc,
-                'Lambda1': 0.,
-                'Lambda2': 0.,
-                'chi1': self.chi_1,
-                'chi2': self.chi_2,
-                'coalescence_angle': coalescing_angle,
-                'domain': 0,  # TD
-                'arg_out': 1,  # Output hlm/hflm. Default = 0
-                'use_mode_lm': k,  # List of modes to use/output through EOBRunPy
-                'srate_interp': 4096.,  # srate at which to interpolate. Default = 4096.
-                'use_geometric_units': 0,  # Output quantities in geometric units. Default = 1
-                'initial_frequency': self.minimum_frequency,  # in Hz if use_geometric_units = 0, else in geometric units
-                'interp_uniform_grid': 1,  # Interpolate mode by mode on a uniform grid. Default = 0 (no interpolation)
-                'distance': self.distance,
-                'inclination': inclination,
-                # - (np.pi / 4), # = iota for non-precessing; adjusted to match IMRPhenomD definition
-                'output_hpc': 0
-            }
-            # print(parameters)
+            self.h_lm = dict()
+            for mode, k in zip(modes, ks):
+                parameters = {
+                    'M': self.MTot,
+                    'q': self.q,  # q > 1
+                    'ecc': self.ecc,
+                    'Lambda1': 0.,
+                    'Lambda2': 0.,
+                    'chi1': self.chi_1,
+                    'chi2': self.chi_2,
+                    'coalescence_angle': coalescing_angle,
+                    'domain': 0,  # TD
+                    'arg_out': 1,  # Output hlm/hflm. Default = 0
+                    'use_mode_lm': [k],  # List of modes to use/output through EOBRunPy
+                    'srate_interp': 4096.,  # srate at which to interpolate. Default = 4096.
+                    'use_geometric_units': 0,  # Output quantities in geometric units. Default = 1
+                    'initial_frequency': self.minimum_frequency,  # in Hz if use_geometric_units = 0, else in geometric units
+                    'interp_uniform_grid': 1,  # Interpolate mode by mode on a uniform grid. Default = 0 (no interpolation)
+                    'distance': self.distance,
+                    'inclination': inclination,
+                    # - (np.pi / 4), # = iota for non-precessing; adjusted to match IMRPhenomD definition
+                    'output_hpc': 0
+                }
 
-            # Run wf generator
-            t, hplus, hcross, hlm, dyn = EOBRun_module.EOBRunPy(parameters)
-            # t, hplus, hcross, hlm = EOBRun_module.EOBRunPy(parameters)
+                t, hplus, hcross, hlm, dyn = EOBRun_module.EOBRunPy(parameters)
 
-            h = hplus - 1j * hcross
-            h_22 = h / harmonics.sYlm(-2, 2, 2, inclination, coalescing_angle)
+                h = hplus - 1j * hcross
+                h_lm = h / harmonics.sYlm(-2, mode[0], mode[1], inclination, coalescing_angle)
 
-            self.h_lm = {(2, 2): h_22, (2, -2): np.conjugate(h_22)}
+                self.h_lm.update({(mode[0], mode[1]): h_lm, (mode[0], -mode[1]): np.conjugate(h_lm)})
+            print(self.h_lm)
             self.zero_pad_h_lm()
 
         if inc is None or phase is None:
